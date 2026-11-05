@@ -1,0 +1,313 @@
+{
+  "$defs": {
+    "Environment": {
+      "additionalProperties": false,
+      "properties": {
+        "ground": {
+          "default": true,
+          "title": "Ground",
+          "type": "boolean"
+        },
+        "background": {
+          "default": "#181d27",
+          "pattern": "^#[0-9a-fA-F]{6}$",
+          "title": "Background",
+          "type": "string"
+        }
+      },
+      "title": "Environment",
+      "type": "object"
+    },
+    "Parameters": {
+      "additionalProperties": false,
+      "properties": {
+        "width": {
+          "default": 8,
+          "exclusiveMinimum": 0,
+          "maximum": 100,
+          "title": "Width",
+          "type": "number"
+        },
+        "depth": {
+          "default": 10,
+          "exclusiveMinimum": 0,
+          "maximum": 100,
+          "title": "Depth",
+          "type": "number"
+        },
+        "height": {
+          "default": 2,
+          "exclusiveMinimum": 0,
+          "maximum": 100,
+          "title": "Height",
+          "type": "number"
+        },
+        "radius": {
+          "default": 1,
+          "exclusiveMinimum": 0,
+          "maximum": 50,
+          "title": "Radius",
+          "type": "number"
+        },
+        "floors": {
+          "default": 2,
+          "maximum": 3,
+          "minimum": 1,
+          "title": "Floors",
+          "type": "integer"
+        },
+        "floor_height": {
+          "default": 3,
+          "maximum": 5,
+          "minimum": 2,
+          "title": "Floor Height",
+          "type": "number"
+        },
+        "roof_type": {
+          "default": "gable",
+          "enum": [
+            "flat",
+            "gable",
+            "shed",
+            "hip"
+          ],
+          "title": "Roof Type",
+          "type": "string"
+        },
+        "roof_angle": {
+          "default": 30,
+          "maximum": 60,
+          "minimum": 5,
+          "title": "Roof Angle",
+          "type": "number"
+        },
+        "wall_color": {
+          "default": "#ecebe4",
+          "pattern": "^#[0-9a-fA-F]{6}$",
+          "title": "Wall Color",
+          "type": "string"
+        },
+        "roof_color": {
+          "default": "#515967",
+          "pattern": "^#[0-9a-fA-F]{6}$",
+          "title": "Roof Color",
+          "type": "string"
+        },
+        "color": {
+          "default": "#dc7355",
+          "pattern": "^#[0-9a-fA-F]{6}$",
+          "title": "Color",
+          "type": "string"
+        },
+        "windows": {
+          "default": 4,
+          "maximum": 24,
+          "minimum": 0,
+          "title": "Windows",
+          "type": "integer"
+        },
+        "doors": {
+          "default": 1,
+          "maximum": 3,
+          "minimum": 0,
+          "title": "Doors",
+          "type": "integer"
+        },
+        "balcony": {
+          "default": false,
+          "title": "Balcony",
+          "type": "boolean"
+        },
+        "steps": {
+          "default": false,
+          "title": "Steps",
+          "type": "boolean"
+        },
+        "garage": {
+          "default": false,
+          "title": "Garage",
+          "type": "boolean"
+        },
+        "yard": {
+          "default": false,
+          "title": "Yard",
+          "type": "boolean"
+        },
+        "style": {
+          "default": "japanese",
+          "enum": [
+            "modern",
+            "japanese"
+          ],
+          "title": "Style",
+          "type": "string"
+        }
+      },
+      "title": "Parameters",
+      "type": "object"
+    },
+    "SceneObject": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[A-Za-z0-9_-]{1,64}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "name": {
+          "default": "Object",
+          "maxLength": 100,
+          "title": "Name",
+          "type": "string"
+        },
+        "type": {
+          "enum": [
+            "house",
+            "cube",
+            "sphere",
+            "cylinder",
+            "cone",
+            "plane",
+            "torus",
+            "table",
+            "chair",
+            "cabinet",
+            "bookshelf",
+            "bed"
+          ],
+          "title": "Type",
+          "type": "string"
+        },
+        "parent": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Parent"
+        },
+        "position": {
+          "default": [
+            0,
+            0,
+            0
+          ],
+          "maxItems": 3,
+          "minItems": 3,
+          "prefixItems": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "number"
+            }
+          ],
+          "title": "Position",
+          "type": "array"
+        },
+        "rotation": {
+          "default": [
+            0,
+            0,
+            0
+          ],
+          "maxItems": 3,
+          "minItems": 3,
+          "prefixItems": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "number"
+            }
+          ],
+          "title": "Rotation",
+          "type": "array"
+        },
+        "scale": {
+          "default": [
+            1,
+            1,
+            1
+          ],
+          "maxItems": 3,
+          "minItems": 3,
+          "prefixItems": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "number"
+            }
+          ],
+          "title": "Scale",
+          "type": "array"
+        },
+        "visible": {
+          "default": true,
+          "title": "Visible",
+          "type": "boolean"
+        },
+        "parameters": {
+          "$ref": "#/$defs/Parameters"
+        }
+      },
+      "required": [
+        "id",
+        "type"
+      ],
+      "title": "SceneObject",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "version": {
+      "const": "1.0",
+      "default": "1.0",
+      "title": "Version",
+      "type": "string"
+    },
+    "name": {
+      "default": "Untitled",
+      "maxLength": 100,
+      "title": "Name",
+      "type": "string"
+    },
+    "units": {
+      "const": "meters",
+      "default": "meters",
+      "title": "Units",
+      "type": "string"
+    },
+    "objects": {
+      "items": {
+        "$ref": "#/$defs/SceneObject"
+      },
+      "maxItems": 50,
+      "title": "Objects",
+      "type": "array"
+    },
+    "environment": {
+      "$ref": "#/$defs/Environment"
+    }
+  },
+  "required": [
+    "objects"
+  ],
+  "title": "Scene",
+  "type": "object"
+}

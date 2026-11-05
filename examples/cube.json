@@ -1,0 +1,53 @@
+{
+  "version": "1.0",
+  "name": "生成一个红色立方体，边长2米。",
+  "units": "meters",
+  "objects": [
+    {
+      "id": "cube_0_0",
+      "name": "cube",
+      "type": "cube",
+      "parent": null,
+      "position": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "visible": true,
+      "parameters": {
+        "width": 2.0,
+        "depth": 2.0,
+        "height": 2.0,
+        "radius": 1.0,
+        "floors": 2,
+        "floor_height": 3.0,
+        "roof_type": "gable",
+        "roof_angle": 30.0,
+        "wall_color": "#ecebe4",
+        "roof_color": "#515967",
+        "color": "#e34b4b",
+        "windows": 4,
+        "doors": 1,
+        "balcony": false,
+        "steps": false,
+        "garage": false,
+        "yard": false,
+        "style": "japanese"
+      }
+    }
+  ],
+  "environment": {
+    "ground": true,
+    "background": "#181d27"
+  }
+}
