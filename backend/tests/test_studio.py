@@ -108,6 +108,32 @@ def test_queue_full(client,monkeypatch):
     monkeypatch.setattr(main,'SLOTS',threading.BoundedSemaphore(0))
     assert client.post('/api/generate-model',json=scene().model_dump()).status_code==429
 
+def test_snapshot_and_cleanup_protects_project(client):
+    import base64,uuid
+    data=(main.ROOT.parent/'examples/cube.glb').read_bytes()
+    result=client.post('/api/models/snapshot',json={'scene':scene().model_dump(),'glb':base64.b64encode(data).decode()})
+    assert result.status_code==201
+    model_id=result.json()['id']
+    result=client.post('/api/projects',json={'name':'protected','scene':scene().model_dump(),'model_id':model_id})
+    assert result.status_code==201
+    client.post('/api/storage/cleanup',json={'older_than_days':0})
+    assert client.get('/api/models/'+model_id+'/download').status_code==200
+    assert client.get('/api/storage').json()['assets'][0]['protected'] is True
+    client.delete('/api/projects/'+result.json()['id'])
+    assert model_id in client.post('/api/storage/cleanup',json={'older_than_days':0}).json()['removed']
+    assert client.get('/api/models/'+model_id+'/download').status_code==404
+    assert client.post('/api/models/snapshot',json={'scene':scene().model_dump(),'glb':'invalid'}).status_code==422
+
+def test_pending_cancel(client):
+    import uuid
+    from app import job_runtime
+    job_id=str(uuid.uuid4())
+    with main.connection() as db:db.execute('INSERT INTO jobs(id,status,progress,scene) VALUES(?,?,?,?)',(job_id,'pending',0,'{}'))
+    result=client.post('/api/jobs/'+job_id+'/cancel')
+    assert result.status_code==200 and result.json()['status']=='cancelled'
+    assert client.post('/api/jobs/'+job_id+'/cancel').status_code==409
+    job_runtime.CANCELLED.discard(job_id)
+
 @pytest.mark.integration
 def test_blender_glb(tmp_path):
     executable=main.blender_path()

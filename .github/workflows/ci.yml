@@ -1,5 +1,5 @@
 name: validate
-on: [push, pull_request]
+on: [push, pull_request, workflow_dispatch]
 jobs:
   backend:
     runs-on: ubuntu-latest
@@ -9,7 +9,18 @@ jobs:
         with:
           python-version: '3.11'
       - run: pip install -r backend/requirements.txt
-      - run: cd backend && pytest -q -ra
+      - run: cd backend && pytest -q -ra -m "not integration and not live"
+  blender-integration:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install -r backend/requirements.txt
+      - run: sudo apt-get update && sudo apt-get install -y blender
+      - run: cd backend && pytest -q -ra -m integration
   frontend:
     runs-on: ubuntu-latest
     steps:
@@ -22,6 +33,11 @@ jobs:
       - run: cd frontend && npm ci
       - run: cd frontend && npm test && npm run build
       - run: cd frontend && npx playwright install --with-deps chromium
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install -r backend/requirements.txt
+      - run: python -m uvicorn app.main:app --app-dir backend --host 127.0.0.1 --port 8000 > backend-ci.log 2>&1 &
       - run: cd frontend && npm run e2e
       - uses: actions/upload-artifact@v4
         if: failure()

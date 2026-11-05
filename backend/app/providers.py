@@ -6,7 +6,7 @@ TYPES = {'house':['住宅','房屋','house','戸建','家'], 'cube':['立方体'
 COLORS = {'红':'#e34b4b','red':'#e34b4b','赤':'#e34b4b','蓝':'#3985ed','blue':'#3985ed','青':'#3985ed','白':'#ffffff','white':'#ffffff','灰':'#666666','gray':'#666666','grey':'#666666','黒':'#222222','黑':'#222222','black':'#222222','绿':'#51aa73','green':'#51aa73'}
 NUM = {'一':'1','二':'2','两':'2','三':'3','四':'4','五':'5','六':'6','七':'7','八':'8','九':'9','十':'10'}
 
-class RuleBasedProvider:
+class LegacyRuleBasedProvider:
     async def parse(self, text: str) -> dict:
         source=text.lower()
         for word,value in {'one':'1','two':'2','three':'3','four':'4','five':'5'}.items(): source=re.sub(r'\b'+word+r'\b',value,source)
@@ -45,6 +45,32 @@ class RuleBasedProvider:
             for j in range(count): objects.append(SceneObject(id=f'{kind}_{i}_{j}',name=kind,type=kind,position=(i*4+j*2.5,0,0),parameters=Parameters(**values)))
         return {'scene':Scene(name=text[:60],objects=objects).model_dump(),'warnings':['规则模式识别常见关键词；复杂材质、相对位置及未列出的描述可能未被提取，请检查参数。']}
 
+class RuleBasedProvider:
+    async def parse(self,text):
+        from .spatial import solve_relations
+        chunks=[]
+        for part in re.split(r'[,，;；。]',text):
+            if not part.strip():continue
+            if re.search(r'(?:生成|创建|放|create|add|place)',part,re.I) and any(word in part.lower() for words in TYPES.values() for word in words):chunks.append(part)
+            elif chunks:chunks[-1]+='，'+part
+        if not chunks:return await LegacyRuleBasedProvider().parse(text)
+        objects=[]
+        relations={'left_of':['左边','左侧','left of'],'right_of':['右边','右侧','right of'],'in_front_of':['前面','前方','in front of'],'behind':['后面','后方','behind'],'above':['上方','above'],'below':['下方','below'],'next_to':['旁边','next to']}
+        for index,chunk in enumerate(chunks):
+            matches=list(re.finditer(r'(?:放置?|创建|生成|create|add|place)',chunk,re.I));cut=matches[-1].end() if matches else 0
+            prefix=chunk[:cut];body=chunk[cut:]
+            result=await LegacyRuleBasedProvider().parse(body)
+            relation=next((key for key,words in relations.items() if any(w in prefix.lower() for w in words)),None)
+            reference=None
+            if relation and objects:
+                reference=next((o for o in reversed(objects) if any(w in prefix.lower() for w in TYPES[o.type])),objects[0])
+            for j,value in enumerate(result['scene']['objects']):
+                o=SceneObject.model_validate(value);o.id=f'{o.type}_{index}_{j}';o.position=(index*3+j*2.5,0,0)
+                if reference:o.relation=relation;o.reference_object_id=reference.id
+                objects.append(o)
+        scene,warnings=solve_relations(Scene(name=text[:60],objects=objects))
+        return {'scene':scene.model_dump(),'warnings':warnings+['规则模式支持常见对象和显式空间关系；请检查未识别的复杂描述。']}
+
 class OpenAICompatibleProvider:
     async def parse(self,text):
         url=os.getenv('LLM_BASE_URL','https://api.openai.com/v1').rstrip('/')
@@ -56,11 +82,22 @@ class OpenAICompatibleProvider:
         return {'scene':scene.model_dump(),'warnings':[]}
 
 class OllamaProvider(OpenAICompatibleProvider):
-    async def parse(self,text):
-        async with httpx.AsyncClient(timeout=90) as client:
-            response=await client.post(os.getenv('OLLAMA_URL','http://localhost:11434')+'/api/chat',json={'model':os.getenv('OLLAMA_MODEL','qwen3:8b'),'stream':False,'format':Scene.model_json_schema(),'messages':[{'role':'user','content':text}]})
-            response.raise_for_status()
-            return {'scene':Scene.model_validate_json(response.json()['message']['content']).model_dump(),'warnings':[]}
+    async def parse(self,text,config=None):
+        from .ollama import OllamaConfig, check_models
+        from .spatial import solve_relations
+        config=config or OllamaConfig()
+        await check_models(config)
+        schema=Scene.model_json_schema()
+        schema['$defs']['SceneObject']['required']=['id','type','parameters','relation','reference_object_id','spacing']
+        schema['$defs']['Parameters']['required']=['color','width','depth','height','radius']
+        instructions='Return declarative Scene JSON only. Use Y-up, meters, XYZ degrees. Give each object independent parameters, especially color and dimensions; never share color across differently described objects. Always explicitly set parameters.color (red=#e34b4b, blue=#3985ed), width, depth, height and radius. Useful defaults: table width=1.6 depth=0.9 height=0.75; chair width=0.55 depth=0.55 height=1; cabinet width=1.2 depth=0.5 height=1.8. For every relative placement, MUST declare relation (左边=left_of, 右边=right_of), reference_object_id and spacing=0.4, instead of guessing coordinates; the application solves positions from bounding boxes. If no explicit reference is named use the first/main object, NOT the previous dependent object. Use null relation/reference only for independent objects. Never generate code.'
+        async with httpx.AsyncClient(timeout=config.timeout,trust_env=False,follow_redirects=False) as client:
+            response=await client.post(config.url+'/api/chat',json={'model':config.model,'stream':False,'format':schema,'options':{'temperature':config.temperature,'num_ctx':config.num_ctx},'messages':[{'role':'system','content':instructions},{'role':'user','content':text}]})
+            if response.status_code!=200:raise ValueError('Ollama 推理失败，请检查本地模型和运行日志')
+            try:scene=Scene.model_validate_json(response.json()['message']['content'])
+            except (ValueError,KeyError,TypeError) as exc:raise ValueError('Ollama 返回的 Scene JSON 无效：'+str(exc)[:300]) from exc
+            scene,warnings=solve_relations(scene)
+            return {'scene':scene.model_dump(),'warnings':warnings}
 
 class Future3DProvider:
     async def parse(self,text): raise ValueError('专业 3D 引擎接口尚未实现')

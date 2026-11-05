@@ -24,12 +24,10 @@ describe("API", () => {
   it("surfaces server errors", async () => {
     vi.stubGlobal(
       "fetch",
-      vi
-        .fn()
-        .mockResolvedValue({
-          ok: false,
-          json: async () => ({ detail: "未找到 Blender" }),
-        }),
+      vi.fn().mockResolvedValue({
+        ok: false,
+        json: async () => ({ detail: "未找到 Blender" }),
+      }),
     );
     await expect(api("/generate-model", "POST", empty)).rejects.toThrow(
       "未找到 Blender",

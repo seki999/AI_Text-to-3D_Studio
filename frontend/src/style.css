@@ -1,4 +1,29 @@
 @import "tailwindcss";
+.edit-toolbar {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  padding: 6px 12px;
+  border-bottom: 1px solid #303949;
+  flex-wrap: wrap;
+}
+.edit-toolbar label {
+  margin: 0;
+  font-size: 10px;
+  gap: 5px;
+}
+.edit-toolbar select {
+  width: 80px;
+  padding: 5px;
+}
+.edit-toolbar button {
+  font-size: 10px;
+  padding: 5px;
+}
+.edit-toolbar .active {
+  background: #40332e;
+  color: #e6a68a;
+}
 :root {
   font-family: Inter, "Segoe UI", "Microsoft YaHei", sans-serif;
   color: #e1e5ec;

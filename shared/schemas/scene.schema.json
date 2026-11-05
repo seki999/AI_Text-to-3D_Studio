@@ -18,9 +18,178 @@
       "title": "Environment",
       "type": "object"
     },
+    "Facades": {
+      "additionalProperties": false,
+      "properties": {
+        "front": {
+          "items": {
+            "$ref": "#/$defs/Opening"
+          },
+          "maxItems": 24,
+          "title": "Front",
+          "type": "array"
+        },
+        "back": {
+          "items": {
+            "$ref": "#/$defs/Opening"
+          },
+          "maxItems": 24,
+          "title": "Back",
+          "type": "array"
+        },
+        "left": {
+          "items": {
+            "$ref": "#/$defs/Opening"
+          },
+          "maxItems": 24,
+          "title": "Left",
+          "type": "array"
+        },
+        "right": {
+          "items": {
+            "$ref": "#/$defs/Opening"
+          },
+          "maxItems": 24,
+          "title": "Right",
+          "type": "array"
+        }
+      },
+      "title": "Facades",
+      "type": "object"
+    },
+    "Opening": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "default": "window",
+          "enum": [
+            "window",
+            "door"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "floor": {
+          "default": 0,
+          "maximum": 2,
+          "minimum": 0,
+          "title": "Floor",
+          "type": "integer"
+        },
+        "x": {
+          "default": 0,
+          "maximum": 50,
+          "minimum": -50,
+          "title": "X",
+          "type": "number"
+        },
+        "sill": {
+          "default": 0.9,
+          "maximum": 5,
+          "minimum": 0,
+          "title": "Sill",
+          "type": "number"
+        },
+        "width": {
+          "default": 1.2,
+          "exclusiveMinimum": 0.15,
+          "maximum": 5,
+          "title": "Width",
+          "type": "number"
+        },
+        "height": {
+          "default": 1.2,
+          "exclusiveMinimum": 0.15,
+          "maximum": 4,
+          "title": "Height",
+          "type": "number"
+        }
+      },
+      "title": "Opening",
+      "type": "object"
+    },
+    "PBR": {
+      "additionalProperties": false,
+      "properties": {
+        "baseColor": {
+          "default": "#dc7355",
+          "pattern": "^#[0-9a-fA-F]{6}$",
+          "title": "Basecolor",
+          "type": "string"
+        },
+        "metalness": {
+          "default": 0,
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Metalness",
+          "type": "number"
+        },
+        "roughness": {
+          "default": 0.6,
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Roughness",
+          "type": "number"
+        },
+        "opacity": {
+          "default": 1,
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Opacity",
+          "type": "number"
+        },
+        "transparent": {
+          "default": false,
+          "title": "Transparent",
+          "type": "boolean"
+        },
+        "doubleSided": {
+          "default": false,
+          "title": "Doublesided",
+          "type": "boolean"
+        },
+        "emissive": {
+          "default": "#000000",
+          "pattern": "^#[0-9a-fA-F]{6}$",
+          "title": "Emissive",
+          "type": "string"
+        }
+      },
+      "title": "PBR",
+      "type": "object"
+    },
     "Parameters": {
       "additionalProperties": false,
       "properties": {
+        "facades": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Facades"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "balcony_facade": {
+          "default": "front",
+          "enum": [
+            "front",
+            "back",
+            "left",
+            "right"
+          ],
+          "title": "Balcony Facade",
+          "type": "string"
+        },
+        "balcony_offset": {
+          "default": 0,
+          "maximum": 50,
+          "minimum": -50,
+          "title": "Balcony Offset",
+          "type": "number"
+        },
         "width": {
           "default": 8,
           "exclusiveMinimum": 0,
@@ -173,7 +342,8 @@
             "chair",
             "cabinet",
             "bookshelf",
-            "bed"
+            "bed",
+            "imported"
           ],
           "title": "Type",
           "type": "string"
@@ -260,6 +430,84 @@
           "default": true,
           "title": "Visible",
           "type": "boolean"
+        },
+        "locked": {
+          "default": false,
+          "title": "Locked",
+          "type": "boolean"
+        },
+        "source_id": {
+          "anyOf": [
+            {
+              "pattern": "^[A-Za-z0-9_-]{1,64}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source Id"
+        },
+        "material": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PBR"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "anchor": {
+          "default": "bottom",
+          "enum": [
+            "center",
+            "bottom"
+          ],
+          "title": "Anchor",
+          "type": "string"
+        },
+        "relation": {
+          "anyOf": [
+            {
+              "enum": [
+                "left_of",
+                "right_of",
+                "in_front_of",
+                "behind",
+                "above",
+                "below",
+                "next_to"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Relation"
+        },
+        "reference_object_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reference Object Id"
+        },
+        "spacing": {
+          "default": 0.4,
+          "maximum": 50,
+          "minimum": 0,
+          "title": "Spacing",
+          "type": "number"
         },
         "parameters": {
           "$ref": "#/$defs/Parameters"

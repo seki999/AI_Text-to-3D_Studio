@@ -1,0 +1,112 @@
+{
+  "version": "1.0",
+  "name": "V0.2 Four Facades House",
+  "units": "meters",
+  "objects": [
+    {
+      "id": "house_0_0",
+      "name": "house",
+      "type": "house",
+      "parent": null,
+      "position": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "rotation": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "visible": true,
+      "locked": false,
+      "source_id": null,
+      "material": null,
+      "anchor": "bottom",
+      "relation": null,
+      "reference_object_id": null,
+      "spacing": 0.4,
+      "parameters": {
+        "facades": {
+          "front": [
+            {
+              "kind": "door",
+              "floor": 0,
+              "x": -2.0,
+              "sill": 0.2,
+              "width": 0.9,
+              "height": 2.0
+            },
+            {
+              "kind": "window",
+              "floor": 1,
+              "x": 1.0,
+              "sill": 0.9,
+              "width": 1.2,
+              "height": 1.2
+            }
+          ],
+          "back": [
+            {
+              "kind": "window",
+              "floor": 1,
+              "x": 0.0,
+              "sill": 0.9,
+              "width": 1.2,
+              "height": 1.2
+            }
+          ],
+          "left": [
+            {
+              "kind": "window",
+              "floor": 1,
+              "x": 0.8,
+              "sill": 0.9,
+              "width": 1.2,
+              "height": 1.2
+            }
+          ],
+          "right": [
+            {
+              "kind": "window",
+              "floor": 1,
+              "x": 0.0,
+              "sill": 0.9,
+              "width": 1.2,
+              "height": 1.2
+            }
+          ]
+        },
+        "balcony_facade": "front",
+        "balcony_offset": 0.0,
+        "width": 8.0,
+        "depth": 10.0,
+        "height": 2.0,
+        "radius": 1.0,
+        "floors": 2,
+        "floor_height": 3.0,
+        "roof_type": "hip",
+        "roof_angle": 30.0,
+        "wall_color": "#ffffff",
+        "roof_color": "#666666",
+        "color": "#666666",
+        "windows": 4,
+        "doors": 1,
+        "balcony": true,
+        "steps": false,
+        "garage": false,
+        "yard": false,
+        "style": "japanese"
+      }
+    }
+  ],
+  "environment": {
+    "ground": true,
+    "background": "#181d27"
+  }
+}

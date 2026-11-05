@@ -1,0 +1,167 @@
+{
+  "version": "1.0",
+  "name": "Untitled",
+  "units": "meters",
+  "objects": [
+    {
+      "id": "table_1",
+      "name": "Object",
+      "type": "table",
+      "parent": null,
+      "position": [
+        0,
+        0,
+        0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "visible": true,
+      "locked": false,
+      "source_id": null,
+      "material": null,
+      "anchor": "bottom",
+      "relation": null,
+      "reference_object_id": null,
+      "spacing": 0,
+      "parameters": {
+        "facades": null,
+        "balcony_facade": "front",
+        "balcony_offset": 0,
+        "width": 1.6,
+        "depth": 0.9,
+        "height": 0.75,
+        "radius": 0.05,
+        "floors": 2,
+        "floor_height": 3,
+        "roof_type": "gable",
+        "roof_angle": 30,
+        "wall_color": "#ecebe4",
+        "roof_color": "#515967",
+        "color": "#8B4513",
+        "windows": 4,
+        "doors": 1,
+        "balcony": false,
+        "steps": false,
+        "garage": false,
+        "yard": false,
+        "style": "japanese"
+      }
+    },
+    {
+      "id": "chair_1",
+      "name": "Object",
+      "type": "chair",
+      "parent": null,
+      "position": [
+        -1.475,
+        0,
+        0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "visible": true,
+      "locked": false,
+      "source_id": null,
+      "material": null,
+      "anchor": "bottom",
+      "relation": "left_of",
+      "reference_object_id": "table_1",
+      "spacing": 0.4,
+      "parameters": {
+        "facades": null,
+        "balcony_facade": "front",
+        "balcony_offset": 0,
+        "width": 0.55,
+        "depth": 0.55,
+        "height": 1,
+        "radius": 0.03,
+        "floors": 2,
+        "floor_height": 3,
+        "roof_type": "gable",
+        "roof_angle": 30,
+        "wall_color": "#ecebe4",
+        "roof_color": "#515967",
+        "color": "#e34b4b",
+        "windows": 4,
+        "doors": 1,
+        "balcony": false,
+        "steps": false,
+        "garage": false,
+        "yard": false,
+        "style": "japanese"
+      }
+    },
+    {
+      "id": "cabinet_1",
+      "name": "Object",
+      "type": "cabinet",
+      "parent": null,
+      "position": [
+        1.8000000000000003,
+        0,
+        0
+      ],
+      "rotation": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        1,
+        1,
+        1
+      ],
+      "visible": true,
+      "locked": false,
+      "source_id": null,
+      "material": null,
+      "anchor": "bottom",
+      "relation": "right_of",
+      "reference_object_id": "table_1",
+      "spacing": 0.4,
+      "parameters": {
+        "facades": null,
+        "balcony_facade": "front",
+        "balcony_offset": 0,
+        "width": 1.2,
+        "depth": 0.5,
+        "height": 1.8,
+        "radius": 0.04,
+        "floors": 2,
+        "floor_height": 3,
+        "roof_type": "gable",
+        "roof_angle": 30,
+        "wall_color": "#ecebe4",
+        "roof_color": "#515967",
+        "color": "#3985ed",
+        "windows": 4,
+        "doors": 1,
+        "balcony": false,
+        "steps": false,
+        "garage": false,
+        "yard": false,
+        "style": "japanese"
+      }
+    }
+  ],
+  "environment": {
+    "ground": true,
+    "background": "#181d27"
+  }
+}
