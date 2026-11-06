@@ -1,0 +1,18 @@
+# Upstream tested stack, isolated from the FastAPI environment. Torch is installed separately.
+transformers==4.46.0
+diffusers==0.30.0
+accelerate==1.1.1
+huggingface-hub==0.30.2
+safetensors==0.4.4
+numpy==1.24.4
+scipy==1.14.1
+einops==0.8.0
+omegaconf==2.3.0
+PyYAML==6.0.2
+opencv-python==4.10.0.84
+scikit-image==0.24.0
+trimesh==4.4.7
+timm==1.0.15
+torchdiffeq==0.2.5
+tqdm==4.66.5
+# Optional decimation is deliberately separate; never default-repair textured geometry.

@@ -1,5 +1,5 @@
 import * as T from "three";
-import { applyTransform } from "../engines/native";
+import { applyTransform,disposeModel } from "../engines/native";
 import type { Scene } from "../types";
 const baselines = new WeakMap<T.Mesh, T.Material[]>();
 const registry = globalThis as typeof globalThis & { __formaCamera?: T.Camera };
@@ -83,7 +83,7 @@ export function syncAsset(
   root.traverse((n) => {
     if (n.userData.editorId && !ids.has(n.userData.editorId)) removed.push(n);
   });
-  removed.forEach((n) => n.removeFromParent());
+  removed.forEach((n) => {n.removeFromParent();disposeModel(n)});
   root.updateMatrixWorld(true);
 }
 export function decomposeLocal(node: T.Object3D, world: T.Matrix4) {

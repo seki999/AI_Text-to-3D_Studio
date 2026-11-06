@@ -1,8 +1,24 @@
-# FORMA · AI Text-to-3D Studio V0.2.0
+# FORMA · AI Text-to-3D Studio V0.3.0
 
-本地优先的参数化三维工作台：文字 → 受验证的 Scene JSON → Native Three.js / Blender → 真实 Mesh → 交互编辑 → 所见即所得导出。
+本地优先的三维工作台，保留参数化路径并新增独立 Generative AI 工作区：文字 → 受验证的 Scene JSON → Native Three.js / Blender → 真实 Mesh → 交互编辑 → 所见即所得导出。
 
 **基础几何与家具无需 Blender，也不需要 LLM 或 API Key。** 房屋继续使用 Blender。中文为默认界面，可解析常见中英日文关键词，并支持配置本地 Ollama 或 OpenAI-compatible 服务。
+
+## V0.3 Generative AI 路径
+
+- **Image-to-3D**：上传 PNG / JPG / WebP → 确认参考图 → 选择已安装的 Hunyuan3D 2.1 → 独立 CUDA Worker → Shape Mesh → GLB → 插入当前场景。
+- **Generative Text-to-3D**：主动调用已配置的 Text-to-Image 服务 → 用户确认 / 重新生成参考图 → 同一 Image-to-3D 路径。Text-to-Image 未配置时明确阻止该步骤，允许自行上传参考图，不假装完成文字生成。
+- **参数化路径**：V0.1 / V0.2 的 RuleBased / Ollama、Native、Blender 和编辑器继续使用；没有 NVIDIA GPU 也可生成基础几何、家具和房屋（房屋需要 Blender）。
+
+当前环境只有 Intel UHD，未准备 CUDA / PyTorch AI 环境或权重，因此**未通过真实 Hunyuan 推理验收**。Mock 仅用于显式测试，在引擎、状态、资产元数据和对象树中均标记“非 AI”。测试球体不是神经网络生成结果。
+
+先运行 `.\scripts\diagnose-ai3d.ps1`。独立环境及用户确认下载步骤见 [GPU-SETUP](docs/GPU-SETUP.md)，模型和权重条款见 [MODEL-LICENSES](docs/MODEL-LICENSES.md)。不自动安装驱动、不在 API 环境安装 Torch、不随代码分发权重。
+
+API 和 Worker 分别在本机 8000 / 8010 端口，使用相同的随机 `AI3D_WORKER_TOKEN`。Worker 启动后，在 Generative AI 面板查询 GPU、CUDA、依赖、权重和纹理准备状态。无从确认的检测项显示 Unknown。Shape 和 Paint 是独立步骤，纹理失败不会覆盖已完成 Shape。
+
+生成资产可追加到当前已生成场景（保留原有对象），支持变换、PBR、复制、隐藏、删除和撤销。项目保存当前组合 GLB 快照及来源信息，缓存清理保护项目引用的原始 AI 资产和参考图。包含 AI 资产的组合场景暂不整体交给参数化 Builder 重建；变换和材质编辑始终可直接导出。
+
+生成进度仅展示真实扩散步数，加载 / 后处理等阶段不伪造百分比；可取消排队及活动任务，Worker 终止推理进程树并释放模型资源。可下载原始 Mesh 和处理后 GLB，默认不执行破坏性修复。
 
 ## Windows 启动
 
@@ -104,6 +120,8 @@ $env:STUDIO_LIVE_MODEL = 'qwen3-coder:30b'
 npm.cmd run e2e -- --grep 'live local'
 ```
 
-Python 真实 LLM 测试：在相同环境变量下，于 backend 目录执行 `..\.venv\Scripts\python.exe -m pytest -m live -q`。快速测试使用 `-m "not integration and not live"`；Blender 集成使用 `-m integration`。缺失条件的测试明确显示跳过，不视为通过。
+Python 真实 LLM 测试：在相同环境变量下，于 backend 目录执行 `..\.venv\Scripts\python.exe -m pytest -m live -q`。快速测试使用 `-m "not integration and not live and not real_ai"`；Blender 集成使用 `-m integration`。缺失条件的测试明确显示跳过，不视为通过。
 
 本次结果、逐 Milestone 状态及未完成事项见 [实现报告](docs/IMPLEMENTATION.md)。架构、安全边界见 [ARCHITECTURE](docs/ARCHITECTURE.md)。V0.1 报告保存在 [历史报告](docs/IMPLEMENTATION-V01.md)。
+
+V0.3 完整后端回归使用 `python -m pytest -m "not live and not real_ai"`（backend 目录）；轻量 Worker Mock 集成独立标记为 `ai3d_integration`。浏览器 Mock 用例需要 API 与 Worker 同时显式开启 `AI3D_ENABLE_MOCK=1` 并配置相同测试令牌，否则明确跳过；它不代表真实 AI。真实 GPU 测试和环境准备见 [GPU-SETUP](docs/GPU-SETUP.md)，V0.2 历史见 [IMPLEMENTATION-V02](docs/IMPLEMENTATION-V02.md)。

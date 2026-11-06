@@ -1,0 +1,74 @@
+{
+  "hardware": {
+    "os": "Windows",
+    "python": "3.13.14",
+    "ram_total_bytes": 34049515520,
+    "ram_available_bytes": 17925619712,
+    "disk_free_bytes": 598647050240,
+    "gpus": [
+      {
+        "name": "Intel(R) UHD Graphics",
+        "vendor": "Intel Corporation",
+        "vram_total_mb": null,
+        "vram_available_mb": null,
+        "driver": null
+      }
+    ],
+    "cuda_available": null,
+    "torch_cuda_available": null,
+    "torch_installed_in_api": false,
+    "worker_python": null,
+    "weights_ready": null,
+    "notes": [
+      "未检测到可用 NVIDIA 显存信息；CUDA 和 PyTorch 状态由独立 Worker 确认"
+    ]
+  },
+  "test_python_probe_only_not_a_prepared_ai_environment": {
+    "python": "3.13.14",
+    "platform": "Windows",
+    "dependencies": {
+      "torch": false,
+      "torchvision": false,
+      "PIL": true,
+      "trimesh": true,
+      "diffusers": false,
+      "transformers": false,
+      "accelerate": false,
+      "safetensors": false,
+      "omegaconf": false,
+      "einops": false,
+      "torchdiffeq": false,
+      "timm": false,
+      "cv2": false,
+      "skimage": false,
+      "scipy": false
+    },
+    "repo_ready": false,
+    "weights_ready": false,
+    "weights_directory": null,
+    "torch_cuda_available": null,
+    "cuda_version": null,
+    "gpus": [],
+    "errors": [
+      "推理环境缺少依赖：torch, torchvision, diffusers, transformers, accelerate, safetensors, omegaconf, einops, torchdiffeq, timm, cv2, skimage, scipy",
+      "未配置可信 HUNYUAN3D_REPO 源码目录",
+      "未发现完整本地 model.fp16.ckpt / safetensors 与匹配的 config.yaml；不会自动下载",
+      "未检测到可用 PyTorch CUDA；不启用未经验证的 CPU 回退"
+    ],
+    "min_shape_vram_mb": 10240,
+    "min_texture_vram_mb": 21504,
+    "texture_ready": false,
+    "source_revision": null,
+    "weights_revision": null,
+    "available": false,
+    "texture_dependencies": {
+      "custom_rasterizer_kernel": false,
+      "mesh_inpaint_processor": false,
+      "pymeshlab": false,
+      "xatlas": false,
+      "cupy": false,
+      "realesrgan": false,
+      "basicsr": false
+    }
+  }
+}

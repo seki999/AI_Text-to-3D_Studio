@@ -10,6 +10,7 @@ export type Object3DData = {
   locked?: boolean;
   source_id?: string;
   material?: PBR;
+  asset?: AssetMetadata | null;
   anchor?: "center" | "bottom";
   relation?:
     | "left_of"
@@ -69,4 +70,61 @@ export type ModelAsset = {
   stats: ModelStats;
   scene: Scene;
   url: string;
+};
+export type AssetMetadata = {
+  asset_id: string;
+  generator: string;
+  model_version: string;
+  source_prompt: string;
+  source_image: string | null;
+  generated_at: string;
+  geometry_format: "GLB";
+  texture_assets: { slot: string; source: string }[];
+  license_metadata: { name?: string; source?: string; restrictions?: string[] };
+  provenance: {
+    kind: "real_ai" | "mock";
+    operation?: string;
+    sha256?: string;
+    source?: string;
+    source_revision?: string;
+  };
+};
+export type AIEngine = {
+  id: string;
+  name: string;
+  version: string;
+  is_mock: boolean;
+  models: string[];
+  texture_capability: string;
+  license: { name: string; source: string; restrictions: string[] };
+  requirements: Record<string, unknown>;
+};
+export type AIImage = {
+  id: string;
+  url: string;
+  info: { width: number; height: number; format: string; bytes: number };
+  prompt?: string;
+};
+export type AIJob = {
+  id: string;
+  engine: string;
+  status: "pending" | "running" | "completed" | "failed" | "cancelled";
+  stage: string;
+  progress: number | null;
+  progress_kind: "stage" | "diffusion_steps";
+  error: string | null;
+  is_mock: boolean;
+  asset_id: string | null;
+  model_url: string | null;
+  original_available: boolean;
+  stats:
+    | (ModelStats & {
+        bounds: number[][];
+        texture_status: string;
+        texture_support: Record<string, boolean>;
+        processing?: { before: ModelStats; after: ModelStats; notes: string[] };
+      })
+    | null;
+  metadata: AssetMetadata | null;
+  created: string;
 };

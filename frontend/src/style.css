@@ -1,4 +1,66 @@
 @import "tailwindcss";
+.workspace-tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 22px;
+}
+.workspace-tabs button {
+  font-size: 11px;
+  flex: 1;
+}
+.generative-panel h2 {
+  font-size: 19px;
+  line-height: 1.7;
+  margin: 15px 0;
+}
+.generative-panel textarea {
+  height: 100px;
+}
+.reference-preview {
+  width: 100%;
+  max-height: 200px;
+  object-fit: contain;
+  background: #0e131c;
+  margin-top: 10px;
+  border: 1px solid #344055;
+  border-radius: 6px;
+}
+.diagnostics {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-height: 300px;
+  overflow: auto;
+  background: #101722;
+  padding: 10px;
+  font-size: 10px;
+  color: #aab8c8;
+  border-radius: 5px;
+}
+.ai-result {
+  margin-top: 15px;
+  padding: 12px;
+  border: 1px solid #435368;
+  border-radius: 6px;
+  font-size: 11px;
+}
+.download-link {
+  display: inline-block;
+  padding: 9px 0;
+}
+a {
+  color: #dba382;
+}
+details {
+  margin: 12px 0;
+  font-size: 11px;
+}
+summary {
+  cursor: pointer;
+  color: #a6b4c5;
+}
+.generative-panel .row {
+  flex-wrap: wrap;
+}
 .edit-toolbar {
   display: flex;
   gap: 5px;

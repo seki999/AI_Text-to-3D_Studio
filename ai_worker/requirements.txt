@@ -1,0 +1,9 @@
+# Worker web/processing environment; torch and upstream inference deps installed separately.
+fastapi>=0.115,<1
+uvicorn>=0.34,<1
+pydantic>=2.10,<3
+httpx>=0.28,<1
+Pillow>=11.3,<13
+numpy>=1.24,<3
+trimesh>=4.4,<5
+psutil>=6,<8

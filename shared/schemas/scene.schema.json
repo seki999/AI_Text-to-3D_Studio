@@ -1,5 +1,82 @@
 {
   "$defs": {
+    "AssetMetadata": {
+      "additionalProperties": false,
+      "properties": {
+        "asset_id": {
+          "pattern": "^[a-f0-9-]{36}$",
+          "title": "Asset Id",
+          "type": "string"
+        },
+        "generator": {
+          "maxLength": 100,
+          "title": "Generator",
+          "type": "string"
+        },
+        "model_version": {
+          "maxLength": 100,
+          "title": "Model Version",
+          "type": "string"
+        },
+        "source_prompt": {
+          "default": "",
+          "maxLength": 4000,
+          "title": "Source Prompt",
+          "type": "string"
+        },
+        "source_image": {
+          "anyOf": [
+            {
+              "pattern": "^[a-f0-9-]{36}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source Image"
+        },
+        "generated_at": {
+          "maxLength": 80,
+          "title": "Generated At",
+          "type": "string"
+        },
+        "geometry_format": {
+          "const": "GLB",
+          "default": "GLB",
+          "title": "Geometry Format",
+          "type": "string"
+        },
+        "texture_assets": {
+          "items": {
+            "additionalProperties": true,
+            "type": "object"
+          },
+          "maxItems": 32,
+          "title": "Texture Assets",
+          "type": "array"
+        },
+        "license_metadata": {
+          "additionalProperties": true,
+          "title": "License Metadata",
+          "type": "object"
+        },
+        "provenance": {
+          "additionalProperties": true,
+          "title": "Provenance",
+          "type": "object"
+        }
+      },
+      "required": [
+        "asset_id",
+        "generator",
+        "model_version",
+        "generated_at"
+      ],
+      "title": "AssetMetadata",
+      "type": "object"
+    },
     "Environment": {
       "additionalProperties": false,
       "properties": {
@@ -430,6 +507,17 @@
           "default": true,
           "title": "Visible",
           "type": "boolean"
+        },
+        "asset": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/AssetMetadata"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         },
         "locked": {
           "default": false,

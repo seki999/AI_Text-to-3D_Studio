@@ -143,17 +143,19 @@ function Native(props: {
 function Asset({
   url,
   format,
+  preserveScene,
   ...props
 }: {
   url: string;
   format: string;
+  preserveScene: boolean;
   wire: boolean;
   onReady: () => void;
   editing: EditingOptions;
 }) {
   const loaded = useLoader(format === "obj" ? OBJLoader : GLTFLoader, url) as
     T.Group | { scene: T.Group };
-  const external = url.startsWith("blob:");
+  const external = url.startsWith("blob:") && !preserveScene;
   const [initialized, setInitialized] = useState(!external);
   const root = useMemo(() => {
     const clone = cloneAsset("scene" in loaded ? loaded.scene : loaded);
@@ -252,6 +254,7 @@ type Props = {
   url: string | null;
   format: string;
   nativeActive?: boolean;
+  preserveScene?: boolean;
   grid: boolean;
   axes: boolean;
   wire: boolean;
@@ -267,6 +270,7 @@ export function Viewer({
   url,
   format,
   nativeActive = false,
+  preserveScene = false,
   grid,
   axes,
   wire,
@@ -314,7 +318,9 @@ export function Viewer({
               {nativeActive ? (
                 <Native {...{ wire, onReady, editing }} />
               ) : url ? (
-                <Asset {...{ url, format, wire, onReady, editing }} />
+                <Asset
+                  {...{ url, format, preserveScene, wire, onReady, editing }}
+                />
               ) : null}
             </Bounds>
           </Suspense>

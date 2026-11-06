@@ -15,10 +15,16 @@ import * as THREE from "three";
 import { getExportModel } from "./services/export";
 import { exportGLTF } from "./services/export";
 import type { EditingOptions } from "./viewer/EditingControls";
+import { GenerativePanel } from "./components/GenerativePanel";
+import { prepareAssetInsertion } from "./services/insertAsset";
 
 const initial =
   "生成一栋日本两层独立住宅，白色外墙、灰色双坡屋顶、四个正面窗户、一个入口、二楼阳台。";
 export default function App() {
+  const [workspace, setWorkspace] = useState<"parametric" | "generative">(
+      "parametric",
+    ),
+    [preserveScene, setPreserveScene] = useState(false);
   const [ollama, setOllama] = useState(defaultOllama);
   const [engine, setEngine] = useState<Engine>("auto"),
     [nativeActive, setNativeActive] = useState(false),
@@ -254,6 +260,7 @@ export default function App() {
         setScene(await api<Scene>("/validate-scene", "POST", data));
         setStatus("Scene JSON 已导入，请生成模型");
       } else if (["glb", "gltf", "obj"].includes(ext || "")) {
+        setPreserveScene(false);
         setNativeActive(false);
         setHasModel(false);
         if (url?.startsWith("blob:")) URL.revokeObjectURL(url);
@@ -271,6 +278,20 @@ export default function App() {
     } catch (e) {
       setError("导入失败：" + String(e));
     }
+  }
+  async function insertAIAsset(id: string) {
+    setError("");
+    const prepared = await prepareAssetInsertion(id);
+    if (url?.startsWith("blob:")) URL.revokeObjectURL(url);
+    setNativeActive(false);
+    setPreserveScene(true);
+    setHasModel(false);
+    setModel(null);
+    setFormat("glb");
+    setUrl(prepared.url);
+    setScene(prepared.scene);
+    select(prepared.selected);
+    setStatus("正在加载 AI 资产 Mesh…");
   }
   return (
     <div className="app">
@@ -317,23 +338,41 @@ export default function App() {
       </header>
       <div className="workspace">
         <aside className="left">
-          <PromptPanel
-            {...{
-              text,
-              setText,
-              provider,
-              setProvider,
-              ollama,
-              setOllama,
-              engine,
-              setEngine,
-              busy,
-              health,
-              parse,
-              generate,
-            }}
-            hasObjects={!!scene.objects.length}
-          />{" "}
+          <div className="workspace-tabs">
+            <button
+              className={workspace === "parametric" ? "primary" : ""}
+              onClick={() => setWorkspace("parametric")}
+            >
+              参数化建模
+            </button>
+            <button
+              className={workspace === "generative" ? "primary" : ""}
+              onClick={() => setWorkspace("generative")}
+            >
+              Generative AI
+            </button>
+          </div>
+          {workspace === "generative" ? (
+            <GenerativePanel onInsert={insertAIAsset} onError={setError} />
+          ) : (
+            <PromptPanel
+              {...{
+                text,
+                setText,
+                provider,
+                setProvider,
+                ollama,
+                setOllama,
+                engine,
+                setEngine,
+                busy,
+                health,
+                parse,
+                generate,
+              }}
+              hasObjects={!!scene.objects.length}
+            />
+          )}{" "}
           <div className="section-title spaced">
             场景数据{" "}
             <button
@@ -404,6 +443,7 @@ export default function App() {
           <EditToolbar options={editing} setOptions={setEditing} />
           <div className="viewport">
             <Viewer
+              preserveScene={preserveScene}
               nativeActive={nativeActive}
               editing={editing}
               {...{ url, format, grid, axes, wire, ortho, view, reset, shot }}

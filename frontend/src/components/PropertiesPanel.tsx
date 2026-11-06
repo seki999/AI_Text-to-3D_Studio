@@ -2,6 +2,7 @@ import { SceneTree } from "./SceneTree";
 import { useStudio } from "../store";
 import { MaterialEditor } from "./MaterialEditor";
 import { FacadeEditor } from "./FacadeEditor";
+import { AssetInfo } from "./AssetInfo";
 export function PropertiesPanel({
   setError,
 }: {
@@ -74,13 +75,16 @@ export function PropertiesPanel({
             </div>
           ))}
           <MaterialEditor object={current} />
+          {current.asset && <AssetInfo asset={current.asset} />}
           {current.type === "house" && (
             <FacadeEditor object={current} onError={setError} />
           )}
           <div className="section-title spaced">
-            程序化参数 <span>需重建</span>
+            程序化参数{" "}
+            <span>{current.asset ? "AI Mesh 不反推参数" : "需重建"}</span>
           </div>
           {Object.entries(current.parameters)
+            .filter(() => !current.asset)
             .filter(([, v]) => typeof v !== "object")
             .filter(([k]) =>
               current.type === "house"

@@ -42,6 +42,8 @@ def initialize():
         if 'model_id' not in {r['name'] for r in db.execute('PRAGMA table_info(projects)')}:
             db.execute('ALTER TABLE projects ADD COLUMN model_id TEXT')
         db.execute("UPDATE jobs SET status='failed',error='服务重启，任务已中断' WHERE status IN ('running','pending')")
+    from .ai3d.routes import initialize as initialize_ai3d
+    initialize_ai3d(connection)
 
 def blender_path():
     configured=os.getenv('BLENDER_PATH')
@@ -110,12 +112,15 @@ def generate(job_id,scene):
 @asynccontextmanager
 async def lifespan(app):
     initialize()
+    from .ai3d.routes import recover,shutdown
+    await recover()
     try:yield
     finally:
+        shutdown()
         for job_id in list(job_runtime.PROCESSES):
             job_runtime.cancel(job_id)
 
-app=FastAPI(title='AI Text-to-3D Studio',version='0.2.0',lifespan=lifespan)
+app=FastAPI(title='AI Text-to-3D Studio',version='0.3.0',lifespan=lifespan)
 app.add_middleware(CORSMiddleware,allow_origins=['http://localhost:5173','http://127.0.0.1:5173'],allow_methods=['GET','POST','PUT','DELETE'],allow_headers=['Content-Type'])
 
 @app.middleware('http')
@@ -124,7 +129,7 @@ async def limit_body(request,call_next):
         body=bytearray()
         async for chunk in request.stream():
             body.extend(chunk)
-            limit=70*1024*1024 if request.url.path=='/api/models/snapshot' else 512*1024
+            limit=70*1024*1024 if request.url.path=='/api/models/snapshot' else (16*1024*1024 if request.url.path=='/api/ai3d/images' else 512*1024)
             if len(body)>limit:
                 from fastapi.responses import JSONResponse
                 return JSONResponse({'detail':'请求体超过大小上限'},status_code=413)
@@ -143,7 +148,7 @@ class ProjectRequest(Strict):
     model_id: str | None = None
 
 @app.get('/api/health')
-def health(): return {'status':'ok','blender_available':bool(blender_path()),'version':'0.2.0'}
+def health(): return {'status':'ok','blender_available':bool(blender_path()),'version':'0.3.0'}
 
 @app.post('/api/providers/ollama/check')
 async def ollama_check(config:OllamaConfig):
@@ -302,3 +307,6 @@ def delete_project(project_id:str):
         result=db.execute('DELETE FROM projects WHERE id=?',(project_id,))
         if not result.rowcount: raise HTTPException(404,'项目不存在')
     return {'deleted':True}
+
+from .ai3d.routes import router as ai3d_router
+app.include_router(ai3d_router)

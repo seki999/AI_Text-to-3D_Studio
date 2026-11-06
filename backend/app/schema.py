@@ -28,6 +28,18 @@ class PBR(Strict):
     doubleSided: bool = False
     emissive: str = Field('#000000',pattern=r'^#[0-9a-fA-F]{6}$')
 
+class AssetMetadata(Strict):
+    asset_id:str=Field(pattern=r'^[a-f0-9-]{36}$')
+    generator:str=Field(max_length=100)
+    model_version:str=Field(max_length=100)
+    source_prompt:str=Field('',max_length=4000)
+    source_image:str|None=Field(None,pattern=r'^[a-f0-9-]{36}$')
+    generated_at:str=Field(max_length=80)
+    geometry_format:Literal['GLB']='GLB'
+    texture_assets:list[dict]=Field(default_factory=list,max_length=32)
+    license_metadata:dict=Field(default_factory=dict)
+    provenance:dict=Field(default_factory=dict)
+
 class Parameters(Strict):
     facades: Facades | None = None
     balcony_facade: Literal['front','back','left','right'] = 'front'
@@ -76,6 +88,7 @@ class SceneObject(Strict):
     rotation: tuple[float,float,float] = (0,0,0)
     scale: tuple[float,float,float] = (1,1,1)
     visible: bool = True
+    asset:AssetMetadata|None=None
     locked: bool = False
     source_id: str | None = Field(None,pattern=r'^[A-Za-z0-9_-]{1,64}$')
     material: PBR | None = None

@@ -1,5 +1,13 @@
 name: validate
-on: [push, pull_request, workflow_dispatch]
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      run_hunyuan_real:
+        description: Run actual Hunyuan inference on a prepared self-hosted GPU runner (no downloads)
+        type: boolean
+        default: false
 jobs:
   backend:
     runs-on: ubuntu-latest
@@ -9,7 +17,20 @@ jobs:
         with:
           python-version: '3.11'
       - run: pip install -r backend/requirements.txt
-      - run: cd backend && pytest -q -ra -m "not integration and not live"
+      - run: cd backend && pytest -q -ra -m "not integration and not live and not real_ai"
+  hunyuan-real-optional:
+    if: github.event_name == 'workflow_dispatch' && inputs.run_hunyuan_real
+    runs-on: [self-hosted, gpu]
+    env:
+      RUN_HUNYUAN_REAL: '1'
+      AI3D_WORKER_URL: http://127.0.0.1:8010
+      AI3D_WORKER_TOKEN: ${{ secrets.AI3D_WORKER_TOKEN }}
+      HUNYUAN_TEST_IMAGE: ${{ vars.HUNYUAN_TEST_IMAGE }}
+    steps:
+      - uses: actions/checkout@v4
+      - run: python -m venv .ci-api-venv
+      - run: .ci-api-venv/bin/python -m pip install -r backend/requirements.txt
+      - run: cd backend && ../.ci-api-venv/bin/python -m pytest -q -ra -m real_ai
   blender-integration:
     if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
@@ -23,6 +44,9 @@ jobs:
       - run: cd backend && pytest -q -ra -m integration
   frontend:
     runs-on: ubuntu-latest
+    env:
+      AI3D_ENABLE_MOCK: '1'
+      AI3D_WORKER_TOKEN: ci-mock-only-non-production-test-token
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -37,6 +61,7 @@ jobs:
         with:
           python-version: '3.11'
       - run: pip install -r backend/requirements.txt
+      - run: python -m uvicorn ai_worker.service:app --host 127.0.0.1 --port 8010 > worker-ci.log 2>&1 &
       - run: python -m uvicorn app.main:app --app-dir backend --host 127.0.0.1 --port 8000 > backend-ci.log 2>&1 &
       - run: cd frontend && npm run e2e
       - uses: actions/upload-artifact@v4

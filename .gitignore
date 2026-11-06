@@ -12,3 +12,10 @@ frontend/playwright-report/
 .tools/
 frontend/tsconfig.tsbuildinfo
 *.log
+.ai3d-venv/
+.ai3d-worker-data/
+/models/
+/weights/
+*.safetensors
+*.ckpt
+*.pth

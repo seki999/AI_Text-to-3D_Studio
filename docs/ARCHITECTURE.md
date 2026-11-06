@@ -1,8 +1,30 @@
-# V0.2 架构与边界
+# V0.3 架构与边界
+
+## V0.3 Generative AI 分层
+
+基线为 `d0e0295a2832770893ebb8d6e734db6193a4b617`，开发分支 `codex/v0.3-generative-ai`。不替换 Native / Blender。新增 `backend/app/ai3d`、`ai_worker`、GenerativePanel 和场景插入服务。
+
+- API：白名单 Engine 契约、图片校验、参考图 Provider、AI 任务 SQLite、后台转交线程、进度转发、原始备份与资产登记。原有 Web 主事件循环不承担模型推理。
+- Worker：回环地址 + 常量时间 token 校验、单活动推理子进程、有界队列、独立数据目录；独立 Python 运行 Hunyuan，API Python 不导入 Torch。超时 / 取消终止进程树；重启按 PID + 创建时间 + 真实命令核对遗留 runner。
+- Runner：只接收 Pydantic 白名单选项。Hunyuan Shape 使用核对过的官方接口，固定本地 config 及 checkpoint SHA256，HF / Transformers 离线；用户图片和 LLM 输出都不能指定 Python 代码、模块、命令或写入路径。Paint 从已有 Shape 单独运行。
+- 后处理：GLB 头部 / Mesh / 索引 / 数量 / 有限坐标验证，原始模型备份、Y-up、可选居中和归一化；默认不开修复 / 简化，不假定封闭流形。保留实际 PBR / UV；处理后丢失纹理则拒绝覆盖。
+- 编辑器：先把已有模型和新 AI 资产组合为内部 GLB 快照，再以保留 Scene 的模式载入，避免外部导入包装逻辑抹掉源参数。异步插入期间如 Scene 发生变化则拒绝覆盖并要求重试。追加对象保持 asset_id、generator、model_version、source_prompt / source_image、许可及 provenance；复制仅改变实例 ID。
+
+生成的 Shape 与 Paint 产物是独立资产。模型来源信息保存在 Scene.asset、GLB extras 和服务器 provenance.json 中；外部导入 GLB 的自报信息不作为真实 AI 验证。主项目快照包括隐藏几何，Scene 负责恢复可见性；正常下载仅导出可见对象。缓存清理同时保护项目快照、其 Scene 引用的 AI 源 GLB、参考图及活动纹理任务输入。
+
+Text-to-Image 是单独接口；兼容服务必须由服务器配置，且用户主动点击并确认发送描述。返回 base64 图片后仍经过同一解码检查，再由用户确认参考图。未配置时不调用 Codex 内置模型，也不冒充完整 Generative Text-to-3D。Mock 需要 API、Worker 和 UI 三处显式开启 / 确认，整个生命周期均标注非 AI。
+
+进度协议的 progress_kind 区分阶段状态和实际扩散步数。加载和网格提取阶段 progress 为 null；扩散步数百分比不是端到端百分比。排队取消释放槽位，活动取消由 Worker 确认终止；无法连接 Worker 时只报告取消请求已记录，不能宣称进程已停止。
+
+### V0.3 仍有的边界
+
+本机无 NVIDIA CUDA，真实 Shape / Paint 未运行。GPU 准入检查只是准备状态，不替代真实推理验证。没有 GPU / RAM / 磁盘硬配额、容器安全沙箱或多用户鉴权。只部署于可信本机。依赖及权重按官方被审查版本隔离，用户自行下载和许可确认；不随本项目发布。包含 AI / 外部 Mesh 的组合场景不直接交给参数化 Builder 重建，避免丢弃导入几何；仍支持独立参数化项目及组合后的变换 / 材质 / 保存 / 导出。
+
+## 保留的 V0.2 子系统
 
 ## 增量演进
 
-基线为 d5ec982d18958763b5724f52e0bb531d26efe3bb。React / FastAPI / SQLite / Blender 均沿用。main.tsx 现在仅挂载 App；PromptPanel、PropertiesPanel、SceneTree、MaterialEditor、FacadeEditor、ProviderSettings、ExportPanel 和 StoragePanel 分离 UI。原有 API、项目表、历史和 Blender 入口保持兼容。
+V0.2 的历史基线为 d5ec982d18958763b5724f52e0bb531d26efe3bb。React / FastAPI / SQLite / Blender 均沿用。main.tsx 现在仅挂载 App；PromptPanel、PropertiesPanel、SceneTree、MaterialEditor、FacadeEditor、ProviderSettings、ExportPanel 和 StoragePanel 分离 UI。原有 API、项目表、历史和 Blender 入口保持兼容。
 
 统一数据流：Provider → Pydantic Scene → AABB 关系求解 → 参数预览 → Auto / Native / Blender → 独立模型 Group → Scene 状态驱动编辑 → Export Service 快照。
 

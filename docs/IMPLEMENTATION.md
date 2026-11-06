@@ -1,57 +1,57 @@
-# V0.2.0 实现报告
+# V0.3.0 实现报告
 
-日期：2026-11-06（Asia/Tokyo）。基线：d5ec982d18958763b5724f52e0bb531d26efe3bb。开发分支：codex/v0.2-studio；按用户最新明确授权，将验证后的提交快进到 main 并推送。
+日期：2026-11-06（Asia/Tokyo）。基线：`d0e0295a2832770893ebb8d6e734db6193a4b617`；独立分支：`codex/v0.3-generative-ai`。本次未合并或推送 main。V0.2 的实现记录保存在 [历史报告](IMPLEMENTATION-V02.md)。
 
-## Milestone 完成情况
+## 交付与验收状态
 
-| 阶段 | 实际交付 |
+| 阶段 | 交付 | 实际验证范围 |
+| --- | --- | --- |
+| A | Engine 契约、Hunyuan3D 2.1 官方接口与许可证核查、RAM/磁盘/GPU/Worker 诊断 | Passed；未测量项返回 Unknown，不把 Intel 共享内存当 CUDA 显存 |
+| B | 独立回环认证 Worker、单任务执行队列、任务数据库、实际子进程取消/超时、重启回收 | Integration Passed，使用显式开启的 Mock 子进程；API 环境未安装 Torch |
+| C | 本地 Shape 管线适配器、固定源码/权重版本和 SHA 校验、真实采样回调；独立可选 Paint 步骤 | **真实 Shape/Paint 未验证**，本机不满足 CUDA、依赖与权重条件 |
+| D | 实际 GLB Mesh 校验、原始备份、坐标/尺寸处理、可选修复/减面、纹理保留、插入当前场景 | Mock/Integration Passed；测试几何不代表神经模型质量 |
+| E | Generative UI、上传预览/确认、进度/取消/日志/历史、元数据、变换/材质编辑、项目保存 | 浏览器集成验证，见下方结果 |
+| F | 可配置 OpenAI-compatible Text-to-Image b64_json 适配器、生成参考图、确认后请求 3D | HTTP 模拟服务契约 Passed；**未配置真实图像 Provider，真实文字到 3D 未验证** |
+| G | 回归、分层测试、安装/诊断脚本、许可证/GPU 文档、轻量 CI 与可选 GPU CI | 本地验证见下；GitHub CI 尚未执行 |
+
+## 测试记录
+
+| 检查 | 结果 |
 | --- | --- |
-| A | Native 六种几何、五种多部件家具、稳定 ID、父子变换、资源释放、Auto / Native / Blender 选择、GLB 导出 |
-| B | TransformControls 移动 / 旋转 / 缩放、Local / World、吸附、基础多选、复制 / 隐藏 / 锁定 / 删除、快捷键、拖拽事务撤销、当前场景 GLB / GLTF / OBJ+MTL / JSON / PNG 导出 |
-| C | Ollama 连通性、模型查询 / 选择、超时 / temperature / context、回环地址限制、cloud 模型拒绝、JSON 错误提示、耗时；逐对象规则参数与声明式空间关系、AABB 求解 |
-| D | 四面墙独立开口、楼层 / 尺寸 / 位置验证、阳台方位和偏移、带屋脊四坡屋顶、sRGB 材质修正、PBR 编辑及预设、兼容旧参数 |
-| E | 实际取消与进程树终止、失败日志及产物回收、磁盘软配额与项目引用保护、保存当前 GLB 快照、组件拆分、快速 / Blender / live 测试分离、文档和 CI |
-
-## 验证记录
-
-| 检查 | 实测结果 |
-| --- | --- |
-| Python 常规 + Blender | **57 passed，1 live 测试被明确排除**；包含原有全部 V0.1 回归、四面开口、材质与 GLB 往返、实际子进程树取消、项目引用保护 |
-| Python 真实 Ollama（独立运行） | **1 passed，57 deselected**，最终版本使用本地 qwen3-coder:30b，约 26.82 秒 |
-| Vitest | **23 passed**，Native 全类型、尺寸 / 颜色 / 父子矩阵、引擎选择、事务撤销、复制 / 删除 / 锁定、材质恢复、资源释放、隐藏模型快照保留、API |
-| Playwright 默认套件 | **5 passed，1 live 测试按默认条件跳过**；真实鼠标拖拽及导出坐标、无 Blender Native、GLB 变换 / PBR / 包围盒往返、真实 Blender 房屋与材质导出 |
-| Playwright 真实 Ollama（单独显式运行） | **1 passed**，本地服务检查、模型选择、原始中文描述解析、三对象颜色与左右关系、Native Mesh 显示；约 32.4 秒 |
-| TypeScript / Vite | 构建通过；主 bundle 约 1.31 MB / gzip 369 KB，仍有体积提示 |
+| Python 常规、Blender 与 Worker Mock 集成 | **81 passed，2 deselected**；排除 live LLM 与 real_ai |
+| Vitest | **24 passed** |
+| TypeScript / Vite | 生产构建通过；主 JS 约 1.32 MB / gzip 373 KB，仍有 bundle 体积提示 |
+| Playwright | **7 passed，1 live Ollama 默认跳过** |
 | npm audit | **0 vulnerabilities** |
-| 共享 Schema / 示例 | Pydantic 与共享 JSON Schema 一致；所有示例 Scene 验证通过 |
+| Real AI | 显式启用 RUN_HUNYUAN_REAL 后检查真实 Worker：**Skipped**；没有执行神经推理，没有生成真实 AI 样例 |
+| 共享 Schema / 示例 / 脚本 | Pydantic Schema 一致，5 个 Scene 示例验证通过；Python 编译与 PowerShell 语法检查通过 |
+| Text-to-Image 真实服务 / Paint | **Skipped / 未配置或未准备**，不计入通过 |
 
-CI 工作流已更新，但本次未在 GitHub 上运行。Python 保留一项 Starlette 测试客户端未来迁移 httpx2 的弃用提示。跳过项不计入通过项；真实 LLM 单独实测，不使用 Mock 结果替代。
+后端覆盖实际 PNG/JPEG/WebP 解码、EXIF 方向处理、大小/像素/损坏图片拒绝、回环与令牌限制、任务排队/取消、CPU 退化、HTTP 图像 Provider 契约、无效/非有限 Mesh 拒绝、纹理保留、项目引用/原图保护。Worker 集成启动实际隔离进程，通过 HTTP 读取模型和原始备份，再清理任务。旧版 Native、Blender、材质和持久化回归一并运行。
 
-已执行的实际场景包含：无需 Blender 的 Native 立方体、真实鼠标拖拽后导出 GLB 并校验变换、PBR 与包围盒往返一致性、真实 Blender 房屋回归、左墙窗户位移、四种屋顶、取消时终止子进程、清理时保护项目引用资产。
+浏览器 Mock 场景为既有红色立方体追加橙色测试 Mesh，完成位置/旋转/粗糙度修改、SQLite 保存与重开、GLB 导出/再导入，并保留来源元数据。**Mock 几何不是根据图片生成的 AI 模型**。
 
-本机现有 Ollama 0.33.3 / qwen3-coder:30b CPU 模型已完成真实 Provider 和浏览器验证，使用 OLLAMA_NO_CLOUD=1，不下载模型。独立推理记录保存在 `ollama-live-result.json`，最终浏览器生成的场景在 `examples/ollama-room.json`，截图见下。第一次语义检查发现默认值被滥用，修复显式字段约束后重新验证；首次尝试不计为通过。开发期间受热更新干扰的中断运行不计为成功；冻结代码后重新运行的真实流程通过。最终常规浏览器回归改用独立 5174 端口、忽略测试产物热更新，5 项全部通过。
+![明确标记非 AI 的 Mock 编辑器集成](screenshots/v03-mock-integration.png)
 
-![真实本地 Qwen 解析后生成的 Native 家具场景](screenshots/ollama-room.png)
+## 修改清单
 
-## 兼容性与范围
+- `backend/app/ai3d/`：契约、图片、诊断、Mesh、Worker/图像适配器、任务/历史/素材 API。
+- `ai_worker/`：独立服务、真实 Hunyuan 管线、环境探测、版本/哈希清单、独立依赖。
+- 后端 main/schema/storage/job_runtime：路由与生命周期、兼容 Scene 1.0 的可选资产元数据、引用保护、可信子进程启动通知及凭证环境隔离。
+- 前端 GenerativePanel/AssetInfo/insertAsset：生成工作区、明确的 Mock/真实来源、当前场景追加、项目保存和资产导出；复用现有 Viewer 与编辑器。
+- `scripts/*ai3d*.ps1`：默认只诊断，独立 Python 3.10 环境、显式依赖安装、额外确认后才下载固定权重。
+- 版本、依赖、共享 Schema、测试、CI、README、ARCHITECTURE、GPU-SETUP、MODEL-LICENSES、V03-CHECKLIST 与实际硬件报告。
 
-V0.1 API、SQLite 项目、默认住宅参数及 Schema version 1.0 继续使用；新增可选字段补默认值。GLB 下载按钮改为当前场景导出，原始生成文件下载 API 保留。旧 windows / doors 在 facades 为 null 时保持旧布局。V0.1 完整测试继续运行，测试新增强断言而非删除旧验收。
+## 本机限制与使用
 
-Auto 对含房屋的混合场景整体选择 Blender；不做跨引擎部分生成。Native 不支持房屋或外部导入参数重建；外部模型仍可编辑和直接导出。规则解析对复杂语言和同类对象描述仍有限。四面墙开口目前为结构化 JSON 编辑器，不是可视化墙面拖放工具。
+本机检测到 Intel UHD，约 32 GB RAM；无可用 NVIDIA CUDA，未准备独立 ML Python、上游源码安装或模型权重。测试使用 API Python 启动轻量 Worker 的 Mock 模式，仅证明协议与编辑器闭环。没有安装 CUDA/显卡驱动，没有下载多 GB 权重，没有在 API 环境安装 PyTorch。详细实测数据见 [硬件报告](v03-hardware-diagnostics.json)。
 
-PBR 覆盖以 Scene 对象为单位，房屋整体材质覆盖会影响各部件；屋顶 / 墙体源颜色仍通过程序化参数重建，并可恢复原始材质。外部模型以包装节点进行基础交互，不反推构件语义。非均匀缩放父节点下的旋转 / 缩放手柄暂被禁用，请先统一父级缩放或使用属性栏编辑局部 TRS；其他不可表示的剪切操作也会明确拒绝。
+真实推理需按 [GPU 安装文档](GPU-SETUP.md) 在支持的机器准备独立环境、可信本地源码与权重，再显式运行 real_ai 测试；本次不能宣称满足硬件时已实测成功。Paint 另需依赖、CUDA 扩展和纹理权重，Shape 可用不等于 Paint 可用。纹理、非流形质量和生成质量仍须在真实模型上验收。
 
-## 修改文件分组
+Shape 官方权重为约 7.37 GB 的 ckpt，并非可直接假定存在的 safetensors；加载前核验固定 SHA，官方加载仍涉及可信代码/配置。许可证限制及源码头部差异见 [MODEL-LICENSES](MODEL-LICENSES.md)，不宣称无限制商用。
 
-- `frontend/src/engines/native/`：生成器、材质、资源生命周期和几何测试。
-- `frontend/src/viewer/`、`Viewer.tsx`：资产加载 / 同步、局部 / 世界矩阵、变换控件与选框。
-- `frontend/src/services/export.ts`：统一快照、GLB / GLTF / OBJ / MTL。
-- `frontend/src/components/`、`App.tsx`、`main.tsx`、`store.ts`、`types.ts`：工作台拆分、状态、PBR、Ollama、磁盘 UI、撤销与多选。
-- `backend/app/schema.py`、`providers.py`、`ollama.py`、`spatial.py`：Schema 扩展、Provider、本地限制、关系求解。
-- `backend/app/main.py`、`job_runtime.py`、`storage.py`：API、快照持久化、取消、日志与磁盘清理。
-- `backend/blender/generate.py`：开口、屋顶、阳台、PBR 和颜色空间。
-- 测试、共享 Schema、示例文件、包版本与 lockfile、README、架构、报告及 CI 随实现更新。
+上传图片上限 10 MB/1600 万像素，规范化 PNG；嵌入纹理最多 4096² 像素，模型产物最多 50 MB。默认不做拓扑修复或减面，保留原始模型。任务/磁盘配额为应用级软限制；取消通过终止独立进程释放 GPU。大型模型内存峰值、真实 GPU 性能和高质量 PBR 仍待目标环境实测。
 
-## 尚未完成与 V0.3
+本机 CI 定义已更新，但没有推送执行远端 CI；Python 存在 Starlette/httpx 测试客户端弃用提示，前端存在包体积提示。跳过项与未执行项均未计入通过。
 
-OS 硬资源配额和完整沙箱、用户认证 / 多进程调度、专业引擎、Windows 安装包、纹理图 / GLTF 文件包、完整动画、墙面可视化拖放和构件级材质编辑尚未实现。建议 V0.3 优先完善导入资源包与构件选择、精确空间碰撞、Windows Job Object 硬限额及桌面封装；随后扩展专业生成引擎。
+交付时正常服务已重启至最新代码，API 与轻量诊断 Worker 的 Mock 均恢复关闭。需要复跑 Mock 浏览器用例时，须按 GPU-SETUP 显式启用测试模式。
