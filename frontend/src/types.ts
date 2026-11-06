@@ -111,7 +111,8 @@ export type AIJob = {
   status: "pending" | "running" | "completed" | "failed" | "cancelled";
   stage: string;
   progress: number | null;
-  progress_kind: "stage" | "diffusion_steps";
+  progress_kind: "stage" | "diffusion_steps" | "provider";
+  remote_id?: string | null;
   error: string | null;
   is_mock: boolean;
   asset_id: string | null;

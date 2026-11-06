@@ -89,3 +89,7 @@ cd backend
 ```
 
 只有真实 Worker、CUDA、固定本地权重和图片准备好后才可能通过。硬件不满足时报告 Skipped。CI 不下载模型；可手动选择准备好的 self-hosted GPU runner，见工作流 `run_hunyuan_real` 输入。
+
+## 无 GPU 的替代路径
+
+V0.3.1 提供 Meshy 云端 Text/Image-to-3D，不需要安装 Worker、CUDA 或大型权重。需要本人有权限和余额的 API Key；按 [CLOUD-PROVIDERS](CLOUD-PROVIDERS.md) 加密配置并确认云端费用。它不证明本机 Hunyuan 实测成功。

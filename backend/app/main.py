@@ -120,7 +120,7 @@ async def lifespan(app):
         for job_id in list(job_runtime.PROCESSES):
             job_runtime.cancel(job_id)
 
-app=FastAPI(title='AI Text-to-3D Studio',version='0.3.0',lifespan=lifespan)
+app=FastAPI(title='AI Text-to-3D Studio',version='0.3.1',lifespan=lifespan)
 app.add_middleware(CORSMiddleware,allow_origins=['http://localhost:5173','http://127.0.0.1:5173'],allow_methods=['GET','POST','PUT','DELETE'],allow_headers=['Content-Type'])
 
 @app.middleware('http')
@@ -148,7 +148,7 @@ class ProjectRequest(Strict):
     model_id: str | None = None
 
 @app.get('/api/health')
-def health(): return {'status':'ok','blender_available':bool(blender_path()),'version':'0.3.0'}
+def health(): return {'status':'ok','blender_available':bool(blender_path()),'version':'0.3.1'}
 
 @app.post('/api/providers/ollama/check')
 async def ollama_check(config:OllamaConfig):
@@ -310,3 +310,5 @@ def delete_project(project_id:str):
 
 from .ai3d.routes import router as ai3d_router
 app.include_router(ai3d_router)
+from .ai3d.cloud import router as cloud3d_router
+app.include_router(cloud3d_router)

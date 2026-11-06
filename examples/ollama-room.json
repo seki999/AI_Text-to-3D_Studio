@@ -24,6 +24,7 @@
         1
       ],
       "visible": true,
+      "asset": null,
       "locked": false,
       "source_id": null,
       "material": null,
@@ -76,6 +77,7 @@
         1
       ],
       "visible": true,
+      "asset": null,
       "locked": false,
       "source_id": null,
       "material": null,
@@ -128,6 +130,7 @@
         1
       ],
       "visible": true,
+      "asset": null,
       "locked": false,
       "source_id": null,
       "material": null,

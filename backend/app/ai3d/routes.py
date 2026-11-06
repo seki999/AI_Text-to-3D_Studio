@@ -26,10 +26,10 @@ def initialize(connection):
     with connection() as db:
         db.executescript('''CREATE TABLE IF NOT EXISTS ai3d_images(id TEXT PRIMARY KEY,info TEXT,prompt TEXT,provider TEXT,created TEXT DEFAULT CURRENT_TIMESTAMP);
         CREATE TABLE IF NOT EXISTS ai3d_jobs(id TEXT PRIMARY KEY,engine TEXT,image_id TEXT,prompt TEXT,options TEXT,operation TEXT,source_job_id TEXT,remote_id TEXT,status TEXT,stage TEXT,progress REAL,progress_kind TEXT,error TEXT,asset_id TEXT,stats TEXT,metadata TEXT,created TEXT DEFAULT CURRENT_TIMESTAMP);''')
-        db.execute("UPDATE ai3d_jobs SET status='failed',stage='服务重启',error='Web 服务重启；远端旧任务会在首次访问时请求取消' WHERE status IN ('pending','running')")
+        db.execute("UPDATE ai3d_jobs SET status='failed',stage='服务重启',error=CASE WHEN engine='meshy' THEN '服务重启，本地等待已停止；云端可能继续运行和计费。请恢复获取已有结果，勿重复生成。' ELSE 'Web 服务重启；远端旧任务会在首次访问时请求取消' END WHERE status IN ('pending','running')")
 
 async def recover():
-    with core().connection() as db:rows=[dict(r) for r in db.execute("SELECT * FROM ai3d_jobs WHERE error LIKE 'Web 服务重启%' AND remote_id IS NOT NULL")]
+    with core().connection() as db:rows=[dict(r) for r in db.execute("SELECT * FROM ai3d_jobs WHERE error LIKE 'Web 服务重启%' AND remote_id IS NOT NULL AND engine!='meshy'")]
     async def terminate(value):
         try:
             await ENGINES[value['engine']].cancel(value['remote_id'])
@@ -86,11 +86,12 @@ def register_asset(value,raw,original,stats):
     scene_mesh,document=load_glb(raw);actual=inspect_scene(scene_mesh,document)
     if c.storage.usage(c.DATA)+len(raw)+len(original)>c.storage.limits()['max_bytes']:raise RuntimeError('生成产物超过本地磁盘软配额，请清理缓存')
     info=ENGINES[value['engine']].get_model_info();now=datetime.now(timezone.utc).isoformat()
-    metadata=AssetMetadata(asset_id=asset_id,generator=value['engine'],model_version=info['version'],source_prompt=value['prompt'],source_image=value['image_id'],generated_at=now,texture_assets=[{'slot':k,'source':'embedded GLB'} for k,v in actual['texture_support'].items() if v],license_metadata=info['license'],provenance={'kind':'mock' if value['engine']=='mock' else 'real_ai','operation':value['operation'],'source_job_id':value.get('source_job_id'),'source':info['source'],'source_revision':info['source_revision'],'sha256':hashlib.sha256(raw).hexdigest(),'source_image_sha256':hashlib.sha256(image_file(value['image_id']).read_bytes()).hexdigest(),'original_sha256':hashlib.sha256(original).hexdigest(),'test_notice':'Mock 测试几何，非 AI 推理' if value['engine']=='mock' else None})
+    metadata=AssetMetadata(asset_id=asset_id,generator=value['engine'],model_version=info['version'],source_prompt=value['prompt'],source_image=value['image_id'],generated_at=now,texture_assets=[{'slot':k,'source':'embedded GLB'} for k,v in actual['texture_support'].items() if v],license_metadata=info['license'],provenance={'kind':'mock' if value['engine']=='mock' else 'real_ai','operation':value['operation'],'source_job_id':value.get('source_job_id'),'source':info['source'],'source_revision':info['source_revision'],'sha256':hashlib.sha256(raw).hexdigest(),'source_image_sha256':hashlib.sha256(image_file(value['image_id']).read_bytes()).hexdigest() if value['image_id'] else None,'original_sha256':hashlib.sha256(original).hexdigest(),'test_notice':'Mock 测试几何，非 AI 推理' if value['engine']=='mock' else None})
     with c.connection() as db:reference=db.execute('SELECT prompt,provider FROM ai3d_images WHERE id=?',(value['image_id'],)).fetchone()
-    metadata.provenance.update(reference_image_provider=reference['provider'],reference_image_prompt=reference['prompt'])
+    if reference:metadata.provenance.update(reference_image_provider=reference['provider'],reference_image_prompt=reference['prompt'])
+    if value['engine']=='meshy':metadata.provenance.update(remote_task=value.get('remote_id'),provider='meshy',model=info['version'],cloud_processing=True)
     if value['engine']!='mock':metadata.provenance.update({'adapter_source_revision':info['source_revision'],'source_revision':stats.get('inference',{}).get('source_revision'),'weights_revision':stats.get('inference',{}).get('weights_revision')})
-    obj=SceneObject(id='asset_'+asset_id,name='Mock 测试资产（非 AI）' if value['engine']=='mock' else 'Hunyuan3D 2.1 AI Asset',type='imported',position=(0,-actual['bounds'][0][1],0),asset=metadata,parameters=Parameters(width=2,depth=2,height=2))
+    obj=SceneObject(id='asset_'+asset_id,name='Mock 测试资产（非 AI）' if value['engine']=='mock' else info['name']+' Asset',type='imported',position=(0,-actual['bounds'][0][1],0),asset=metadata,parameters=Parameters(width=2,depth=2,height=2))
     scene=Scene(name=obj.name,objects=[obj]);directory.mkdir(exist_ok=True)
     (directory/'model.glb').write_bytes(raw);(directory/'original.glb').write_bytes(original)
     (directory/'model.json').write_text(scene.model_dump_json(indent=2),encoding='utf-8')
@@ -150,7 +151,11 @@ async def orchestrate(job_id,event):
         with LOCK:CANCELS.pop(job_id,None);FUTURES.pop(job_id,None)
         SLOTS.release()
 
-def execute_async(job_id,event):asyncio.run(orchestrate(job_id,event))
+def execute_async(job_id,event):
+    if row(job_id)['engine']=='meshy':
+        from .cloud import orchestrate as cloud_orchestrate
+        asyncio.run(cloud_orchestrate(job_id,event))
+    else:asyncio.run(orchestrate(job_id,event))
 
 def start(value):
     if not SLOTS.acquire(False):raise HTTPException(429,'AI 转交队列已满')
@@ -224,10 +229,12 @@ def history():
 @router.get('/jobs/{job_id}')
 async def get(job_id:str):
     value=row(job_id)
-    if value.get('error','') and value['error'].startswith('Web 服务重启') and value['remote_id']:
+    if value.get('error','') and value['error'].startswith('Web 服务重启') and value['remote_id'] and value['engine']!='meshy':
         try:await ENGINES[value['engine']].cancel(value['remote_id'])
         except ValueError:pass
         update(job_id,error='Web 服务重启，已尝试取消 Worker 旧任务')
+    if value['engine']=='meshy' and value.get('error','') and value['error'].startswith('Web 服务重启'):
+        value['error']='服务重启，本地等待已停止；云端可能继续运行和计费。请恢复获取已有结果，勿重复生成。'
     return representation(value)
 
 @router.post('/jobs/{job_id}/cancel')
@@ -240,8 +247,9 @@ async def cancel(job_id:str):
         future=FUTURES.get(job_id)
         if future and future.cancel():
             CANCELS.pop(job_id,None);FUTURES.pop(job_id,None);SLOTS.release()
-            update(job_id,status='cancelled',stage='排队任务取消，未启动 Worker',progress=None)
+            update(job_id,status='cancelled',stage='排队任务取消，尚未提交引擎',progress=None)
             return representation(row(job_id))
+    if value['engine']=='meshy':return representation(row(job_id))
     if value['remote_id']:
         try:await ENGINES[value['engine']].cancel(value['remote_id'])
         except ValueError as exc:raise HTTPException(503,'取消请求已记录，但 Worker 尚未确认终止：'+str(exc)) from exc
@@ -250,6 +258,7 @@ async def cancel(job_id:str):
 @router.get('/jobs/{job_id}/log')
 async def log(job_id:str):
     value=row(job_id)
+    if value['engine']=='meshy':return {'log':f"Meshy: {value['stage']}\n{value.get('error') or ''}\n云端任务 {value.get('remote_id') or '创建结果尚未确认'}；不记录密钥、响应正文或签名下载链接。"}
     if value['remote_id']:
         try:return await ENGINES[value['engine']].worker.json('GET',f"/jobs/{value['remote_id']}/log")
         except ValueError:pass

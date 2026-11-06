@@ -17,7 +17,7 @@ jobs:
         with:
           python-version: '3.11'
       - run: pip install -r backend/requirements.txt
-      - run: cd backend && pytest -q -ra -m "not integration and not live and not real_ai"
+      - run: cd backend && pytest -q -ra -m "not integration and not live and not real_ai and not real_api"
   hunyuan-real-optional:
     if: github.event_name == 'workflow_dispatch' && inputs.run_hunyuan_real
     runs-on: [self-hosted, gpu]
@@ -63,7 +63,7 @@ jobs:
       - run: pip install -r backend/requirements.txt
       - run: python -m uvicorn ai_worker.service:app --host 127.0.0.1 --port 8010 > worker-ci.log 2>&1 &
       - run: python -m uvicorn app.main:app --app-dir backend --host 127.0.0.1 --port 8000 > backend-ci.log 2>&1 &
-      - run: cd frontend && npm run e2e
+      - run: cd frontend && npm run e2e -- --workers=1
       - uses: actions/upload-artifact@v4
         if: failure()
         with:

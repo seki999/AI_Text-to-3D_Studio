@@ -31,6 +31,16 @@ class TextureRequest(Strict):
     source_job_id:str
     engine:Literal['hunyuan3d-2.1']='hunyuan3d-2.1'
 
+class CloudRequest(Strict):
+    engine:Literal['meshy']='meshy'
+    mode:Literal['text','image']
+    prompt:str=Field('',max_length=800)
+    image_id:str|None=None
+    textured:bool=True
+    cloud_consent:bool=False
+    license_acknowledged:bool=False
+    processing:ProcessingOptions=Field(default_factory=ProcessingOptions)
+
 class ImageUpload(Strict):
     data:str=Field(max_length=16*1024*1024)
     filename:str=Field('reference.png',max_length=200)

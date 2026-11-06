@@ -19,3 +19,7 @@ frontend/tsconfig.tsbuildinfo
 *.safetensors
 *.ckpt
 *.pth
+
+# Never commit local encrypted credentials or temporary secret files
+*.dpapi
+*.secret

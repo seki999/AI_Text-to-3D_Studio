@@ -9,6 +9,12 @@ import { api } from "../api";
 export async function prepareAssetInsertion(assetId: string) {
   const asset = await api<ModelAsset>("/models/" + assetId);
   const loaded = await new GLTFLoader().loadAsync(asset.url);
+  if (asset.scene.objects[0]?.asset?.generator === "meshy") {
+    // Keep provider asset declarations in exported GLB extras as well as the raw backup.
+    loaded.scene.userData.provider_gltf_asset = structuredClone(
+      loaded.parser.json.asset,
+    );
+  }
   const state = useStudio.getState(),
     originalScene = state.scene,
     current = getExportModel();

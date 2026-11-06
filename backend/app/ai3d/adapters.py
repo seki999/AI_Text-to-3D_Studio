@@ -75,4 +75,5 @@ class FutureGenerative3DAdapter(Generative3DEngine):
     async def cancel(self,job_id):raise NotImplementedError()
     async def cleanup(self,job_id):raise NotImplementedError()
 
-ENGINES={'hunyuan3d-2.1':Hunyuan3D21Adapter(),'mock':MockGenerative3DAdapter()}
+from .meshy import MeshyAdapter
+ENGINES={'hunyuan3d-2.1':Hunyuan3D21Adapter(),'mock':MockGenerative3DAdapter(),'meshy':MeshyAdapter()}

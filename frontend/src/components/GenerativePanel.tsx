@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { api } from "../api";
+import { CloudGenerationPanel } from "./CloudGenerationPanel";
 import type { AIEngine, AIImage, AIJob } from "../types";
 type Status = {
   available: boolean;
@@ -147,6 +148,15 @@ export function GenerativePanel({
       setBusy(false);
     }
   }
+  if (engine === "meshy")
+    return (
+      <CloudGenerationPanel
+        engines={engines}
+        onEngine={setEngine}
+        onInsert={onInsert}
+        onError={onError}
+      />
+    );
   return (
     <section className="generative-panel">
       <div className="section-title">
@@ -490,7 +500,7 @@ export function GenerativePanel({
               >
                 下载生成 GLB
               </a>
-              {!job.is_mock && (
+              {job.engine === "hunyuan3d-2.1" && (
                 <button
                   disabled={busy}
                   onClick={async () => {

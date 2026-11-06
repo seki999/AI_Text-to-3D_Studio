@@ -1,4 +1,4 @@
-# FORMA · AI Text-to-3D Studio V0.3.0
+# FORMA · AI Text-to-3D Studio V0.3.1
 
 本地优先的三维工作台，保留参数化路径并新增独立 Generative AI 工作区：文字 → 受验证的 Scene JSON → Native Three.js / Blender → 真实 Mesh → 交互编辑 → 所见即所得导出。
 
@@ -125,3 +125,20 @@ Python 真实 LLM 测试：在相同环境变量下，于 backend 目录执行 `
 本次结果、逐 Milestone 状态及未完成事项见 [实现报告](docs/IMPLEMENTATION.md)。架构、安全边界见 [ARCHITECTURE](docs/ARCHITECTURE.md)。V0.1 报告保存在 [历史报告](docs/IMPLEMENTATION-V01.md)。
 
 V0.3 完整后端回归使用 `python -m pytest -m "not live and not real_ai"`（backend 目录）；轻量 Worker Mock 集成独立标记为 `ai3d_integration`。浏览器 Mock 用例需要 API 与 Worker 同时显式开启 `AI3D_ENABLE_MOCK=1` 并配置相同测试令牌，否则明确跳过；它不代表真实 AI。真实 GPU 测试和环境准备见 [GPU-SETUP](docs/GPU-SETUP.md)，V0.2 历史见 [IMPLEMENTATION-V02](docs/IMPLEMENTATION-V02.md)。
+
+
+## 云端 3D：没有独立显卡的 Windows
+
+现已接入 Meshy 官方 API，保留 Hunyuan3D 与 Mock。使用本人有权限和余额的 Meshy 账户，在项目目录的交互式 PowerShell 终端运行：
+
+```powershell
+.\scripts\configure-meshy.ps1
+```
+
+按提示隐藏输入 API Key。密钥由 Windows 当前用户 DPAPI 加密存放在仓库外，不放入 .env、网页、命令行参数或日志。在 Generative AI 选择“Meshy 云端 AI”，刷新配置状态，选择 Text-to-3D 或 Image-to-3D，确认费用/素材权利后点击生成。
+
+默认文字示例是“生成一条红色、有翅膀的幻想龙。”；默认带纹理时会创建 preview 和 refine 两个收费任务。图片模式直接生成带 2K PBR 的 GLB。完成后点击“预览 / 插入当前场景”，可旋转查看、修改材质/变换、保存项目及导出 GLB。停止本地等待不保证停止云端计费；可恢复查询已保存的任务 ID。
+
+**本次没有真实 API Key，未调用付费生成，未验证真实龙模型或云端生成质量。** API 契约测试使用标记为非 AI 的夹具；真实 Hunyuan Shape/Paint 也仍未验证。官方服务的公开文档及无密钥 HTTP 401 连通性检查不能替代有密钥推理验收。
+
+配置、取消/恢复、真实测试与当前限制见 [CLOUD-PROVIDERS](docs/CLOUD-PROVIDERS.md)，验收结果见 [IMPLEMENTATION](docs/IMPLEMENTATION.md)。不需下载大型模型或安装 CUDA。

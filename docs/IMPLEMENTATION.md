@@ -1,57 +1,59 @@
-# V0.3.0 实现报告
+# V0.3.1 云端 Provider 实现与 V0.3 验收
 
-日期：2026-11-06（Asia/Tokyo）。基线：`d0e0295a2832770893ebb8d6e734db6193a4b617`；独立分支：`codex/v0.3-generative-ai`。本次未合并或推送 main。V0.2 的实现记录保存在 [历史报告](IMPLEMENTATION-V02.md)。
+日期：2026-11-07（Asia/Tokyo）。本次基线为 `ab2daf5`，独立开发分支 `codex/cloud-3d-provider`。核对 Git 后确认 V0.3 已经快进合并并推送至 main；用户描述中的“main 还是 V0.2”是旧状态，本次无需重复合并 V0.3。原报告保存在 [IMPLEMENTATION-V03](IMPLEMENTATION-V03.md)。
 
-## 交付与验收状态
+## 本次交付
 
-| 阶段 | 交付 | 实际验证范围 |
+- Meshy 官方云端 Adapter，同时支持文字和图片生成。文字默认 preview → refine 生成带纹理资产；图片直接提交 2K PBR 任务。无须本机 NVIDIA/CUDA，不下载大型模型。
+- 保留 Hunyuan3D 与显式 Mock；Engine 注册表增加 meshy，云端编排独立复用现有 SQLite、资产登记、GLB 编辑器、项目保存和导出链路。
+- Windows 当前用户 DPAPI 加密 API Key，仓库外存储；交互终端隐藏输入，无前端密钥输入或读取接口、无 localStorage、无命令行密钥参数。状态检查不发送密钥到前端，也不主动上传输入或调用收费任务。
+- 明确的上传/费用与第三方条款确认，直接输入“生成一条红色、有翅膀的幻想龙。”；没有密钥时禁用生成，不用规则几何或 Mock 替代真实结果。
+- 异步轮询、当前阶段进度、错误分类、Retry-After、有界 GET 重试，创建 POST 不自动重试；任务 ID 持久化、停止/重启后显式恢复。运行中不能云端中止，不宣称停止等待等于停止计费。refine 创建结果未知时禁止重复提交。
+- 独立无认证 CDN 下载、固定 HTTPS 域名、逐重定向检查、50 MB 流式限额；实际 Mesh/图片/纹理校验、原始备份、非破坏根变换，保留原始 GLB buffer/材质/供应商元数据。插入后可修改材质/变换、保存、重开、导出及再导入。
+- 更新版本 0.3.1、README、架构、GPU 路径、第三方商业使用与服务限制、云端配置/测试指南；CI 明确排除付费 real_api。
+
+## 测试结果与分类
+
+| 类型 | 实测结果 | 证明范围 |
 | --- | --- | --- |
-| A | Engine 契约、Hunyuan3D 2.1 官方接口与许可证核查、RAM/磁盘/GPU/Worker 诊断 | Passed；未测量项返回 Unknown，不把 Intel 共享内存当 CUDA 显存 |
-| B | 独立回环认证 Worker、单任务执行队列、任务数据库、实际子进程取消/超时、重启回收 | Integration Passed，使用显式开启的 Mock 子进程；API 环境未安装 Torch |
-| C | 本地 Shape 管线适配器、固定源码/权重版本和 SHA 校验、真实采样回调；独立可选 Paint 步骤 | **真实 Shape/Paint 未验证**，本机不满足 CUDA、依赖与权重条件 |
-| D | 实际 GLB Mesh 校验、原始备份、坐标/尺寸处理、可选修复/减面、纹理保留、插入当前场景 | Mock/Integration Passed；测试几何不代表神经模型质量 |
-| E | Generative UI、上传预览/确认、进度/取消/日志/历史、元数据、变换/材质编辑、项目保存 | 浏览器集成验证，见下方结果 |
-| F | 可配置 OpenAI-compatible Text-to-Image b64_json 适配器、生成参考图、确认后请求 3D | HTTP 模拟服务契约 Passed；**未配置真实图像 Provider，真实文字到 3D 未验证** |
-| G | 回归、分层测试、安装/诊断脚本、许可证/GPU 文档、轻量 CI 与可选 GPU CI | 本地验证见下；GitHub CI 尚未执行 |
+| V0.3 基线 Python | 81 passed，2 deselected | 原有 Native/Blender/持久化与轻量 Worker 测试；不含真实 GPU |
+| 最终 Python 回归 | **106 passed，3 deselected** | 包含 25 项新增 Meshy/安全存储/GLB 契约验证；排除真实 LLM/GPU/付费 API |
+| API Contract | **25 passed** | httpx MockTransport，真实 HTTP 请求序列与本地 GLB 处理，未发出真实生成请求 |
+| Vitest | **24 passed** | 原有前端建模/编辑/导出回归 |
+| TypeScript / Vite | **Passed** | 生产构建；bundle 约 1.33 MB / gzip 375 KB，仍有体积提示 |
+| Playwright 最终串行回归 | **9 passed，1 live Ollama 默认跳过**（约 3 分钟） | Native、真实 Blender、Worker Mock、缺密钥阻止与云端 UI 契约 |
+| 真实 Ollama Python | **1 passed，82 deselected**（72.06 秒） | 实际本地 qwen3-coder:30b，三对象颜色和相对位置 |
+| 真实 Ollama 浏览器 | **1 passed**（34.9 秒） | 实际连接、中文描述、本地解析及 Native 模型展示 |
+| npm audit | **0 vulnerabilities** | 本机依赖审计 |
+| Meshy 公开端点连通性 | **HTTP 401** | 无认证、只读 GET，不发送描述/图片，不创建任务、不证明推理成功 |
+| Real API Inference | **Skipped** | 没有配置真实 Meshy API Key；没有付费生成、真实龙模型或质量验证 |
+| Real Hunyuan Shape/Paint | **Skipped / unavailable** | 本机仍无 NVIDIA CUDA、AI 依赖和权重，未执行真实神经推理 |
 
-## 测试记录
+契约测试覆盖：费用/条款确认前不提交、缺密钥明确阻止、文字 preview/refine 参数、图片 data URI 与最小尺寸、401/402/403/429/500、安全错误不回显密钥、POST 超时不重试、取消竞态、停止后恢复不重复创建、重启不删除/重建收费任务、refine 不确定性保护、CDN/重定向/认证隔离、无效 GLB 不替换、几何/材质/标记保留、Windows DPAPI 实际加密往返。
 
-| 检查 | 结果 |
+浏览器云端流程使用**明确标注的 API Contract 测试素材（非真实 AI）**，真实执行 Three.js 加载、位置/旋转/缩放/粗糙度编辑、SQLite 保存、重载打开、GLB 导出/再导入及来源元数据断言。该测试并不证明 Meshy 生成了龙。截图见下：
+
+![API Contract 测试素材，不是真实云端 AI 生成](screenshots/cloud-api-contract.png)
+
+首次 V0.3 浏览器验收出现异步状态等待超时，真实 Ollama 首次因服务未启动失败；启动已有本地服务后真实 Python/浏览器均通过。后续并发回归时 Ollama 模型驻留使可用内存约 4 GB，多项浏览器等待超时；本次测试模型卸载后约 19.7 GB 可用，改为串行冻结代码重跑。失败/中断尝试不计为通过。硬件诊断本身再次实测耗时约 1.23 秒且明确 Hunyuan unavailable。Python 仍存在 Starlette/httpx 测试客户端弃用提示。
+
+## 主要文件
+
+| 区域 | 修改 |
 | --- | --- |
-| Python 常规、Blender 与 Worker Mock 集成 | **81 passed，2 deselected**；排除 live LLM 与 real_ai |
-| Vitest | **24 passed** |
-| TypeScript / Vite | 生产构建通过；主 JS 约 1.32 MB / gzip 373 KB，仍有 bundle 体积提示 |
-| Playwright | **7 passed，1 live Ollama 默认跳过** |
-| npm audit | **0 vulnerabilities** |
-| Real AI | 显式启用 RUN_HUNYUAN_REAL 后检查真实 Worker：**Skipped**；没有执行神经推理，没有生成真实 AI 样例 |
-| 共享 Schema / 示例 / 脚本 | Pydantic Schema 一致，5 个 Scene 示例验证通过；Python 编译与 PowerShell 语法检查通过 |
-| Text-to-Image 真实服务 / Paint | **Skipped / 未配置或未准备**，不计入通过 |
+| 后端新增 | ai3d/meshy.py、cloud.py、cloud_mesh.py、credentials.py |
+| 后端增量 | Engine 注册表、CloudRequest、可空源图/云端来源登记、路由与版本、测试标记 |
+| 前端 | CloudGenerationPanel、原生成面板入口、进度/远端 ID 类型、供应商 GLB asset 元数据导出保留 |
+| 测试 | test_meshy.py、cloud.spec.ts、原 Generative 异步诊断/上传响应与 Worker 就绪等待窗口 |
+| 配置/文档 | configure-meshy.ps1、gitignore、轻量 CI、CLOUD-PROVIDERS、第三方许可、README、架构、GPU 文档、验收清单与报告 |
 
-后端覆盖实际 PNG/JPEG/WebP 解码、EXIF 方向处理、大小/像素/损坏图片拒绝、回环与令牌限制、任务排队/取消、CPU 退化、HTTP 图像 Provider 契约、无效/非有限 Mesh 拒绝、纹理保留、项目引用/原图保护。Worker 集成启动实际隔离进程，通过 HTTP 读取模型和原始备份，再清理任务。旧版 Native、Blender、材质和持久化回归一并运行。
+## 尚未验证和边界
 
-浏览器 Mock 场景为既有红色立方体追加橙色测试 Mesh，完成位置/旋转/粗糙度修改、SQLite 保存与重开、GLB 导出/再导入，并保留来源元数据。**Mock 几何不是根据图片生成的 AI 模型**。
+1. 当前真实 API Key 缺失，未验证账户权限、余额、云端推理/纹理质量、实际生成耗时、真实供应商 GLB 在本机的完整往返。官方文档核查和未认证 401 不计为真实推理通过。
+2. 真实付费测试默认跳过，需要用户自己安全配置密钥并显式接受费用。参见 [配置与测试](CLOUD-PROVIDERS.md)。服务生成的复杂度、红色外观与“有翅膀的幻想龙”语义质量须用真实请求验收。
+3. Meshy 仅实现文档化的 GLB 输出。不为不存在 GLB 的结果伪造转换，不做额外收费的格式转换；不支持超 50 MB 文件。CDN/模型协议变化会明确失败；未知扩展、动画/骨骼、DRACO 与厂商特殊标记的完整支持仍需真实资产测试。
+4. 密钥存储目前为 Windows DPAPI，其他系统 fail closed。应用是可信本机单用户客户端，不是共享密钥的多用户 SaaS；转售或白标服务需另外核对供应商许可。Meshy 的输出不继承项目 MIT。
+5. 新云端工作无需本地 Worker，但不代表本地 Hunyuan 被验证。GPU/权重状态未变，未下载多 GB 模型、未安装 CUDA 或显卡驱动。
+6. 本地测试通过不等于远端 GitHub CI 已通过，CI 需推送后单独确认。
 
-![明确标记非 AI 的 Mock 编辑器集成](screenshots/v03-mock-integration.png)
-
-## 修改清单
-
-- `backend/app/ai3d/`：契约、图片、诊断、Mesh、Worker/图像适配器、任务/历史/素材 API。
-- `ai_worker/`：独立服务、真实 Hunyuan 管线、环境探测、版本/哈希清单、独立依赖。
-- 后端 main/schema/storage/job_runtime：路由与生命周期、兼容 Scene 1.0 的可选资产元数据、引用保护、可信子进程启动通知及凭证环境隔离。
-- 前端 GenerativePanel/AssetInfo/insertAsset：生成工作区、明确的 Mock/真实来源、当前场景追加、项目保存和资产导出；复用现有 Viewer 与编辑器。
-- `scripts/*ai3d*.ps1`：默认只诊断，独立 Python 3.10 环境、显式依赖安装、额外确认后才下载固定权重。
-- 版本、依赖、共享 Schema、测试、CI、README、ARCHITECTURE、GPU-SETUP、MODEL-LICENSES、V03-CHECKLIST 与实际硬件报告。
-
-## 本机限制与使用
-
-本机检测到 Intel UHD，约 32 GB RAM；无可用 NVIDIA CUDA，未准备独立 ML Python、上游源码安装或模型权重。测试使用 API Python 启动轻量 Worker 的 Mock 模式，仅证明协议与编辑器闭环。没有安装 CUDA/显卡驱动，没有下载多 GB 权重，没有在 API 环境安装 PyTorch。详细实测数据见 [硬件报告](v03-hardware-diagnostics.json)。
-
-真实推理需按 [GPU 安装文档](GPU-SETUP.md) 在支持的机器准备独立环境、可信本地源码与权重，再显式运行 real_ai 测试；本次不能宣称满足硬件时已实测成功。Paint 另需依赖、CUDA 扩展和纹理权重，Shape 可用不等于 Paint 可用。纹理、非流形质量和生成质量仍须在真实模型上验收。
-
-Shape 官方权重为约 7.37 GB 的 ckpt，并非可直接假定存在的 safetensors；加载前核验固定 SHA，官方加载仍涉及可信代码/配置。许可证限制及源码头部差异见 [MODEL-LICENSES](MODEL-LICENSES.md)，不宣称无限制商用。
-
-上传图片上限 10 MB/1600 万像素，规范化 PNG；嵌入纹理最多 4096² 像素，模型产物最多 50 MB。默认不做拓扑修复或减面，保留原始模型。任务/磁盘配额为应用级软限制；取消通过终止独立进程释放 GPU。大型模型内存峰值、真实 GPU 性能和高质量 PBR 仍待目标环境实测。
-
-本机 CI 定义已更新，但没有推送执行远端 CI；Python 存在 Starlette/httpx 测试客户端弃用提示，前端存在包体积提示。跳过项与未执行项均未计入通过。
-
-交付时正常服务已重启至最新代码，API 与轻量诊断 Worker 的 Mock 均恢复关闭。需要复跑 Mock 浏览器用例时，须按 GPU-SETUP 显式启用测试模式。
+最终浏览器冻结代码串行套件 9 项全部通过（含实际 Mock Worker 传回 Mesh）；已完成 Schema/Scene 示例、Python 编译、PowerShell 语法和 Git diff 空白检查。正常预览服务恢复 Mock 关闭，付费生成仍需用户自己配置密钥。

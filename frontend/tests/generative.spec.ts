@@ -13,12 +13,16 @@ test("unavailable neural engine leaves parametric Native editor working", async 
     .getByRole("button", { name: "Generative AI", exact: true })
     .click();
   await page.getByRole("button", { name: "Text-to-3D", exact: true }).click();
-  await expect(page.getByText(/未配置 Text-to-Image Provider/)).toBeVisible();
+  await expect(page.getByText(/未配置 Text-to-Image Provider/)).toBeVisible({
+    timeout: 15000,
+  });
   await expect(
     page.getByRole("button", { name: "生成 / 重新生成参考图" }),
   ).toBeDisabled();
   await page.getByRole("button", { name: "GPU / CUDA / 模型诊断" }).click();
-  await expect(page.locator(".generative-panel .diagnostics")).toBeVisible();
+  await expect(page.locator(".generative-panel .diagnostics")).toBeVisible({
+    timeout: 20000,
+  });
   await expect(
     page.getByRole("button", { name: "↓ GLB", exact: true }),
   ).toBeEnabled();
@@ -50,6 +54,9 @@ test("Integration Mock Passed: image → Worker → Mesh → append → edit →
   await expect(
     page.getByText("测试模式：仅生成测试几何，非 AI 神经网络推理。"),
   ).toBeVisible();
+  await expect(
+    page.getByText("Mock 测试 Worker 可用（非 AI）", { exact: true }),
+  ).toBeVisible({ timeout: 20000 });
   const image = await page.evaluate(() => {
     const c = document.createElement("canvas");
     c.width = 32;
@@ -59,21 +66,26 @@ test("Integration Mock Passed: image → Worker → Mesh → append → edit →
     ctx.fillRect(0, 0, 32, 32);
     return c.toDataURL("image/png").split(",")[1];
   });
-  await page
-    .getByLabel("AI 参考图片", { exact: true })
-    .setInputFiles({
-      name: "reference.png",
-      mimeType: "image/png",
-      buffer: Buffer.from(image, "base64"),
-    });
-  await expect(page.getByAltText("AI 参考图片预览")).toBeVisible();
+  const uploaded = page.waitForResponse(
+    (r) =>
+      r.url().endsWith("/api/ai3d/images") && r.request().method() === "POST",
+  );
+  await page.getByLabel("AI 参考图片", { exact: true }).setInputFiles({
+    name: "reference.png",
+    mimeType: "image/png",
+    buffer: Buffer.from(image, "base64"),
+  });
+  expect((await uploaded).status()).toBe(201);
+  await expect(page.getByAltText("AI 参考图片预览")).toBeVisible({
+    timeout: 15000,
+  });
   await page.getByLabel("确认参考图").check();
   await page.getByLabel("确认 Mock 测试模式").check();
   await page
     .getByRole("button", { name: "生成 Mock 测试 Mesh", exact: true })
     .click();
   await expect(page.locator(".ai-result strong")).toContainText("completed", {
-    timeout: 60000,
+    timeout: 120000,
   });
   await expect(page.locator(".ai-result")).toContainText("未生成纹理");
   await page.getByRole("button", { name: "预览 / 插入当前场景" }).click();

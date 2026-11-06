@@ -1,0 +1,9 @@
+{
+  "checked_at": "2026-11-07 Asia/Tokyo",
+  "method": "GET",
+  "url": "https://api.meshy.ai/openapi/v2/text-to-3d?page_size=1",
+  "authentication": "none",
+  "inputs_sent": false,
+  "generation_requested": false,
+  "http_status": 401
+}

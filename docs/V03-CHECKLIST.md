@@ -19,3 +19,17 @@ C：适配器已实现；真实 Shape/Paint 验收因本机条件不足而未完
 F：Provider 契约、参考图确认和编排已实现；真实 Provider 未配置，端到端神经生成未验证。
 
 G：本地回归与文档已完成；真实 GPU 验证、真实纹理与远端 CI 仍待执行。详细分类及结果见 IMPLEMENTATION.md。
+
+
+## V0.3 验收与 V0.3.1 云端增量（2026-11-07）
+
+- [x] 核对 main 已包含 ab2daf5（V0.3），不重复合并。
+- [x] Python、Vitest、TypeScript 构建；真实 Native/Blender 和本地 Ollama 回归。
+- [x] 官方 Meshy / Tripo 文档研究，选择 Meshy 实现文字/图片 Adapter。
+- [x] 本地 Windows DPAPI 凭证、费用/输入上传确认、异步状态/错误/停止等待/恢复。
+- [x] 云端 GLB 校验、原始备份、元数据保留、编辑器/保存/导出契约流程。
+- [x] Mock、API Contract、Real API 分层测试与明确 Skipped；无 Key 不伪造输出。
+- [ ] 有真实 Key 后的付费 API、真实红色幻想龙和供应商 GLB 质量验收。
+- [ ] 真实 Hunyuan Shape/Paint（本机 CUDA 条件不足）。
+
+最终结果和剩余限制以 IMPLEMENTATION.md 为准。

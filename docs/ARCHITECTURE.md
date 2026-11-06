@@ -1,3 +1,11 @@
+# V0.3.1 云端增量架构
+
+MeshyAdapter 与既有 Hunyuan/Mock 共用 Engine 注册表；独立 `cloud.py` 编排不依赖本地 Worker。新增 `/api/ai3d/jobs/cloud` 与 `/jobs/{id}/resume`，复用 AI SQLite 任务表、正常模型资产登记、原始备份、Scene.asset 和编辑器插入/保存链路。文字任务含 preview 与可选 refine 两个 ID 阶段，图片单任务；进度新增 `provider` 类型。重启停止本地等待并保留远端 ID，不自动重新提交付费请求。云端源图可空，兼容原有 Scene 1.0。
+
+`credentials.py` 仅用当前用户 Windows DPAPI，凭证在仓库外；无 HTTP 密钥接口。固定 Meshy API 与受信任 HTTPS CDN 分离客户端；下载不携带认证，逐重定向检查和流式限额。云端 GLB 处理保留 buffer/材质/元数据，仅添加根变换。CloudGenerationPanel 独立呈现费用/上传许可、未验证账户状态、任务取消限制和恢复入口；原 GenerativePanel 保留本地流程。详见 [CLOUD-PROVIDERS](CLOUD-PROVIDERS.md)。
+
+以下为保留的 V0.3 与 V0.2 架构说明。
+
 # V0.3 架构与边界
 
 ## V0.3 Generative AI 分层
