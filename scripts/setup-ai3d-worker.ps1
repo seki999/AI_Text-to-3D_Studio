@@ -1,17 +1,18 @@
 param(
     [switch]$InstallDependencies,
     [switch]$DownloadWeights,
-    [switch]$AcceptModelLicense
+    [switch]$AcceptModelLicense,
+    [string]$EnvironmentPath=""
 )
 $ErrorActionPreference='Stop'
 $studioRoot=Split-Path -Parent $PSScriptRoot
-$studioEnv=Join-Path $studioRoot '.ai3d-venv'
+$studioEnv=if ($EnvironmentPath) { [System.IO.Path]::GetFullPath($EnvironmentPath) } else { Join-Path $studioRoot '.ai3d-venv' }
 $studioSource=Join-Path $studioRoot '.tools/Hunyuan3D-2.1'
 $studioWeights=Join-Path $studioRoot 'models/Hunyuan3D-2.1'
 $studioRevision='82920d643c0dc2f7bfd7255f45f62d386edfe60c'
 Set-Location -LiteralPath $studioRoot
 if (!$InstallDependencies -and !$DownloadWeights) {
-    Write-Host 'No downloads requested. Use -InstallDependencies to create a separate Python 3.10 environment.'
+    Write-Host 'No downloads requested. Use -InstallDependencies to create a separate Python 3.11 environment.'
     Write-Host 'Read docs/GPU-SETUP.md and docs/MODEL-LICENSES.md before enabling inference.'
     if (Test-Path -LiteralPath "$studioEnv/Scripts/python.exe") { & "$studioEnv/Scripts/python.exe" -X utf8 -m ai_worker.probe }
     exit
@@ -19,9 +20,11 @@ if (!$InstallDependencies -and !$DownloadWeights) {
 if (!$AcceptModelLicense) { throw 'Read the upstream model license first, then explicitly pass -AcceptModelLicense. Project MIT does not license Hunyuan weights.' }
 if ($InstallDependencies) {
     if (!(Test-Path -LiteralPath "$studioEnv/Scripts/python.exe")) {
-        & py -3.10 -m venv $studioEnv
-        if ($LASTEXITCODE -ne 0) { throw 'Python 3.10 is required. This script does not install a system Python or GPU driver.' }
+        & py -3.11 -m venv $studioEnv
+        if ($LASTEXITCODE -ne 0) { throw 'Python 3.11 is required. This script does not install a system Python or GPU driver.' }
     }
+    $studioPythonVersion=& "$studioEnv/Scripts/python.exe" -c "import sys;print(str(sys.version_info.major)+'.'+str(sys.version_info.minor))"
+    if ($studioPythonVersion -ne "3.11") { throw 'The secure Pillow requirement needs Python 3.11. Existing environments are never overwritten; pass -EnvironmentPath for a new isolated environment. Real Hunyuan compatibility still requires GPU validation.' }
     if (!(Test-Path -LiteralPath $studioSource)) {
         git clone --filter=blob:none https://github.com/Tencent-Hunyuan/Hunyuan3D-2.1.git $studioSource
         if ($LASTEXITCODE -ne 0) { throw 'Source clone failed' }

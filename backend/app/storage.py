@@ -7,7 +7,11 @@ def folders(root):
         try:valid=str(uuid.UUID(path.name))==path.name
         except ValueError:valid=False
         if valid and path.is_dir() and not path.is_symlink() and path.resolve().is_relative_to(root.resolve()):yield path
-def usage(root):return sum(p.stat().st_size for directory in folders(root) for p in directory.iterdir() if p.is_file() and not p.is_symlink())
+def usage(root):
+    total=sum(p.stat().st_size for directory in folders(root) for p in directory.iterdir() if p.is_file() and not p.is_symlink())
+    library=root/"library"
+    if library.is_dir():total+=sum(p.stat().st_size for p in library.rglob("*") if p.is_file() and not p.is_symlink())
+    return total
 def referenced_assets(db):
     references=set()
     for row in db.execute('SELECT model_id,scene FROM projects'):
@@ -29,6 +33,7 @@ def cleanup(root,connection,days):
         references=referenced_assets(db)
         has_ai=bool(db.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='ai3d_jobs'").fetchone())
         if has_ai:references.update(r['source_job_id'] for r in db.execute("SELECT source_job_id FROM ai3d_jobs WHERE status IN ('pending','running') AND source_job_id IS NOT NULL"))
+        if db.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='library_assets'").fetchone():references.update(r[0] for r in db.execute('SELECT id FROM library_assets'))
         rows=db.execute("SELECT id FROM jobs WHERE status IN ('completed','failed','cancelled') AND created<=?",(cutoff,)).fetchall()
         directories={d.name:d for d in folders(root)}
         for row in rows:

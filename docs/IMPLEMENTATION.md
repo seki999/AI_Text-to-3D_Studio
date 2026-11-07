@@ -1,59 +1,46 @@
-# V0.3.1 云端 Provider 实现与 V0.3 验收
+# FORMA V0.4 增量开发报告
 
-日期：2026-11-07（Asia/Tokyo）。本次基线为 `ab2daf5`，独立开发分支 `codex/cloud-3d-provider`。核对 Git 后确认 V0.3 已经快进合并并推送至 main；用户描述中的“main 还是 V0.2”是旧状态，本次无需重复合并 V0.3。原报告保存在 [IMPLEMENTATION-V03](IMPLEMENTATION-V03.md)。
+日期：2026-11-07。分支 `codex/v0.4-windows-studio`，基线 V0.3.1 `1c9e96d`。未合并 main，未执行付费请求、购买服务、下载大型模型或发布 Store。V0.3.1 原报告见 IMPLEMENTATION-V031.md。
 
-## 本次交付
+## 已实现
 
-- Meshy 官方云端 Adapter，同时支持文字和图片生成。文字默认 preview → refine 生成带纹理资产；图片直接提交 2K PBR 任务。无须本机 NVIDIA/CUDA，不下载大型模型。
-- 保留 Hunyuan3D 与显式 Mock；Engine 注册表增加 meshy，云端编排独立复用现有 SQLite、资产登记、GLB 编辑器、项目保存和导出链路。
-- Windows 当前用户 DPAPI 加密 API Key，仓库外存储；交互终端隐藏输入，无前端密钥输入或读取接口、无 localStorage、无命令行密钥参数。状态检查不发送密钥到前端，也不主动上传输入或调用收费任务。
-- 明确的上传/费用与第三方条款确认，直接输入“生成一条红色、有翅膀的幻想龙。”；没有密钥时禁用生成，不用规则几何或 Mock 替代真实结果。
-- 异步轮询、当前阶段进度、错误分类、Retry-After、有界 GET 重试，创建 POST 不自动重试；任务 ID 持久化、停止/重启后显式恢复。运行中不能云端中止，不宣称停止等待等于停止计费。refine 创建结果未知时禁止重复提交。
-- 独立无认证 CDN 下载、固定 HTTPS 域名、逐重定向检查、50 MB 流式限额；实际 Mesh/图片/纹理校验、原始备份、非破坏根变换，保留原始 GLB buffer/材质/供应商元数据。插入后可修改材质/变换、保存、重开、导出及再导入。
-- 更新版本 0.3.1、README、架构、GPU 路径、第三方商业使用与服务限制、云端配置/测试指南；CI 明确排除付费 real_api。
+- .NET 10 + WebView2 正式桌面主机，自包含 FastAPI 引擎和编译后的 React；动态 loopback 端口、Job Object 子进程清理、原生 DPAPI 密钥配置、Blender 选择、可选 Worker、用户日志与数据目录、MSI。
+- 本地会话授权、Host/Origin/CSRF 防护，敏感原生 API 不接受网页 cookie 单独调用；默认不公开公网。
+- 独立 SQLite 资产库：真实/Mock/本地来源、缩略图、描述、收藏搜索、Mesh/贴图信息、导入导出、项目引用保护。简化须确认并创建副本，保留原始 GLB。
+- GLB 有界流式加载、字节进度和取消、资源释放、高面数提示、WebGL context lost 恢复。GLTF parse 已开始时取消会丢弃并释放结果，不能中断同步解析本身。
+- 初次启动说明、费用确认、任务恢复/日志、缓存清理、数据导出与明确删除、版本及升级策略。没有自动上传用户内容。
+- 真实 Meshy 验收工具：显式费用授权、Key 检查、官方免费 balance、持久任务 ID、一次 meshy-6-lite preview、状态/真实 GLB 下载和校验、报告。低成本估计 5 credits；服务价格可变，账户余额不等于所有生成权限。无 Key/未授权生成 Skipped，绝不回退 Mock。正常 Meshy text/image 功能保留。
+- 合法已有外部资产兼容性入口，要求来源/使用权确认；其结果明确不同于本应用发起真实推理。当前没有用户提供的合法云端样本，未声称这部分真实素材验收通过。
 
-## 测试结果与分类
+## 实测
 
-| 类型 | 实测结果 | 证明范围 |
-| --- | --- | --- |
-| V0.3 基线 Python | 81 passed，2 deselected | 原有 Native/Blender/持久化与轻量 Worker 测试；不含真实 GPU |
-| 最终 Python 回归 | **106 passed，3 deselected** | 包含 25 项新增 Meshy/安全存储/GLB 契约验证；排除真实 LLM/GPU/付费 API |
-| API Contract | **25 passed** | httpx MockTransport，真实 HTTP 请求序列与本地 GLB 处理，未发出真实生成请求 |
-| Vitest | **24 passed** | 原有前端建模/编辑/导出回归 |
-| TypeScript / Vite | **Passed** | 生产构建；bundle 约 1.33 MB / gzip 375 KB，仍有体积提示 |
-| Playwright 最终串行回归 | **9 passed，1 live Ollama 默认跳过**（约 3 分钟） | Native、真实 Blender、Worker Mock、缺密钥阻止与云端 UI 契约 |
-| 真实 Ollama Python | **1 passed，82 deselected**（72.06 秒） | 实际本地 qwen3-coder:30b，三对象颜色和相对位置 |
-| 真实 Ollama 浏览器 | **1 passed**（34.9 秒） | 实际连接、中文描述、本地解析及 Native 模型展示 |
-| npm audit | **0 vulnerabilities** | 本机依赖审计 |
-| Meshy 公开端点连通性 | **HTTP 401** | 无认证、只读 GET，不发送描述/图片，不创建任务、不证明推理成功 |
-| Real API Inference | **Skipped** | 没有配置真实 Meshy API Key；没有付费生成、真实龙模型或质量验证 |
-| Real Hunyuan Shape/Paint | **Skipped / unavailable** | 本机仍无 NVIDIA CUDA、AI 依赖和权重，未执行真实神经推理 |
-
-契约测试覆盖：费用/条款确认前不提交、缺密钥明确阻止、文字 preview/refine 参数、图片 data URI 与最小尺寸、401/402/403/429/500、安全错误不回显密钥、POST 超时不重试、取消竞态、停止后恢复不重复创建、重启不删除/重建收费任务、refine 不确定性保护、CDN/重定向/认证隔离、无效 GLB 不替换、几何/材质/标记保留、Windows DPAPI 实际加密往返。
-
-浏览器云端流程使用**明确标注的 API Contract 测试素材（非真实 AI）**，真实执行 Three.js 加载、位置/旋转/缩放/粗糙度编辑、SQLite 保存、重载打开、GLB 导出/再导入及来源元数据断言。该测试并不证明 Meshy 生成了龙。截图见下：
-
-![API Contract 测试素材，不是真实云端 AI 生成](screenshots/cloud-api-contract.png)
-
-首次 V0.3 浏览器验收出现异步状态等待超时，真实 Ollama 首次因服务未启动失败；启动已有本地服务后真实 Python/浏览器均通过。后续并发回归时 Ollama 模型驻留使可用内存约 4 GB，多项浏览器等待超时；本次测试模型卸载后约 19.7 GB 可用，改为串行冻结代码重跑。失败/中断尝试不计为通过。硬件诊断本身再次实测耗时约 1.23 秒且明确 Hunyuan unavailable。Python 仍存在 Starlette/httpx 测试客户端弃用提示。
-
-## 主要文件
-
-| 区域 | 修改 |
+| 项目 | 结果 |
 | --- | --- |
-| 后端新增 | ai3d/meshy.py、cloud.py、cloud_mesh.py、credentials.py |
-| 后端增量 | Engine 注册表、CloudRequest、可空源图/云端来源登记、路由与版本、测试标记 |
-| 前端 | CloudGenerationPanel、原生成面板入口、进度/远端 ID 类型、供应商 GLB asset 元数据导出保留 |
-| 测试 | test_meshy.py、cloud.spec.ts、原 Generative 异步诊断/上传响应与 Worker 就绪等待窗口 |
-| 配置/文档 | configure-meshy.ps1、gitignore、轻量 CI、CLOUD-PROVIDERS、第三方许可、README、架构、GPU 文档、验收清单与报告 |
+| Python 回归 | 114 passed，3 个 live/real 测试按标记排除 |
+| Vitest | 24 passed |
+| TypeScript / Vite production | passed，Three.js 主包仍有体积提示 |
+| Playwright | 12 passed，真实 Ollama 默认跳过 1 |
+| Windows MSI 安装/卸载 | exit 0；正式 React Canvas 与 Native 模型加载通过 |
+| 授权/退出 | 未授权请求 401；API/Worker 退出后均停止 |
+| 持久化/迁移 | SQLite 备份/拒绝新 schema、库项目引用保护、GLB 保存重开导出通过 |
+| Windows DPAPI | 真实当前用户加解密单元测试通过 |
+| npm / API Python / NuGet 审计 | 当前锁定运行依赖未发现已知漏洞 |
+| 真实 Meshy | Skipped，无本地 Key，未付费调用 |
+| Hunyuan CUDA | 未验证，无可用 CUDA/权重 |
 
-## 尚未验证和边界
+Python 回归包含 Native、Blender、Ollama 协议、Mock Worker HTTP/进程、Meshy MockTransport 契约。本次额外运行真实本地 Ollama qwen3-coder:30b：Python 1 passed（80.20 秒）及 Playwright 1 passed（55.0 秒）；没有新增下载。协议测试不算真实推理。Windows 轮询进度文件的瞬时共享冲突已加入有界重试和回归测试。
 
-1. 当前真实 API Key 缺失，未验证账户权限、余额、云端推理/纹理质量、实际生成耗时、真实供应商 GLB 在本机的完整往返。官方文档核查和未认证 401 不计为真实推理通过。
-2. 真实付费测试默认跳过，需要用户自己安全配置密钥并显式接受费用。参见 [配置与测试](CLOUD-PROVIDERS.md)。服务生成的复杂度、红色外观与“有翅膀的幻想龙”语义质量须用真实请求验收。
-3. Meshy 仅实现文档化的 GLB 输出。不为不存在 GLB 的结果伪造转换，不做额外收费的格式转换；不支持超 50 MB 文件。CDN/模型协议变化会明确失败；未知扩展、动画/骨骼、DRACO 与厂商特殊标记的完整支持仍需真实资产测试。
-4. 密钥存储目前为 Windows DPAPI，其他系统 fail closed。应用是可信本机单用户客户端，不是共享密钥的多用户 SaaS；转售或白标服务需另外核对供应商许可。Meshy 的输出不继承项目 MIT。
-5. 新云端工作无需本地 Worker，但不代表本地 Hunyuan 被验证。GPU/权重状态未变，未下载多 GB 模型、未安装 CUDA 或显卡驱动。
-6. 本地测试通过不等于远端 GitHub CI 已通过，CI 需推送后单独确认。
+安装结果见 v04-desktop-test.json；真实请求关闭报告见 v04-real-api-verification.json；审计见 v04-*-audit.json。最新 V0.3.1 CI 已核实 success，run 42305524315；V0.4 远端 CI 必须在推送后单独确认。Windows 打包 CI 仅手动开启；GitHub Actions 不触发付费生成。
 
-最终浏览器冻结代码串行套件 9 项全部通过（含实际 Mock Worker 传回 Mesh）；已完成 Schema/Scene 示例、Python 编译、PowerShell 语法和 Git diff 空白检查。正常预览服务恢复 Mock 关闭，付费生成仍需用户自己配置密钥。
+## 未完成的外部验收与发布条件
+
+1. 未执行真实 Meshy 付费生成及其 Viewer/编辑/保存/重开/导出全链路。验收报告只记录实际证据，保存/导出证据没有完成时保留 not_verified。
+2. 没有合法真实云端 GLB 样本可做兼容性验收，测试 GLB 与 MockTransport 不算真实云端推理成功。
+3. 可选上游 GPU 栈审计发现 49 项已知漏洞：transformers 4.46.0 (43)、diffusers 0.30.0 (5)、accelerate 1.1.1 (1)。这些包没有安装/随桌面分发，尚未验证兼容的全栈升级，不应当作可安全发布的 GPU 环境。
+4. Pillow 升级 13 后独立 Worker 新环境改用 Python 3.11；上游曾测试的 3.10 组合不同，CUDA/Paint 新组合未实测，旧环境不会被覆盖。
+5. 当前 MSI 未签名；全新 Windows、缺失 WebView2 的前置安装、签名自动更新、WACK/Store、升级安装多版本矩阵尚未验收。
+6. 资产库列表目前最多 200 项，超大型库的分页及不同云端材质扩展兼容性仍需后续验证。
+
+## 合并方案
+
+保持 main 不动。先审阅 V0.3.1 provider 与安全差异（原分支 CI success）；独立审阅 V0.4 桌面/数据迁移/授权及安装结果，推送后确认新 CI。确认上述未验证项可作为明确发布限制后，再由用户明确决定是否合并 main。不能据本地测试宣称真实收费 API 或 Store 认证通过。

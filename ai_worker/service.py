@@ -51,7 +51,8 @@ def execute(job_id):
             update(job_id,'running')
         with (directory/'runner.log').open('w',encoding='utf-8') as log:
             def started(process):(directory/'process.json').write_text(json.dumps({'pid':process.pid,'create_time':psutil.Process(process.pid).create_time()}),encoding='utf-8')
-            code=job_runtime.run_worker(job_id,[sys.executable,'-m','ai_worker.runner',str(directory)],log,ROOT,timeout=int(os.getenv('AI3D_TIMEOUT_SECONDS','1800')),on_started=started)
+            command=[sys.executable,'--runner',str(directory)] if getattr(sys,'frozen',False) else [sys.executable,'-m','ai_worker.runner',str(directory)]
+            code=job_runtime.run_worker(job_id,command,log,ROOT,timeout=int(os.getenv('AI3D_TIMEOUT_SECONDS','1800')),on_started=started)
         if code:
             error=json.loads((directory/'error.json').read_text(encoding='utf-8'))['error'] if (directory/'error.json').exists() else '推理子进程异常退出，请查看日志'
             raise RuntimeError(error)
@@ -80,7 +81,7 @@ async def lifespan(app):
             directory=valid_id(row['id'])
             try:
                 state=json.loads((directory/'process.json').read_text(encoding='utf-8'));process=psutil.Process(state['pid'])
-                if abs(process.create_time()-state['create_time'])<.01 and process.cmdline()[-3:]==['-m','ai_worker.runner',str(directory)]:
+                if abs(process.create_time()-state['create_time'])<.01 and (process.cmdline()[-3:]==['-m','ai_worker.runner',str(directory)] or (getattr(sys,'frozen',False) and process.exe()==sys.executable and process.cmdline()[-2:]==['--runner',str(directory)])):
                     children=process.children(recursive=True)
                     for child in children:child.kill()
                     process.kill();psutil.wait_procs(children+[process],timeout=5)
@@ -93,6 +94,13 @@ async def lifespan(app):
             except HTTPException:pass
 
 app=FastAPI(title='FORMA independent AI3D Worker',version='0.3.0',lifespan=lifespan,dependencies=[Depends(authorize)])
+
+@app.post('/shutdown')
+def shutdown_desktop():
+    server=getattr(app.state,'desktop_server',None)
+    if not server:raise HTTPException(404,'非受管理的桌面 Worker')
+    threading.Timer(.2,lambda:setattr(server,'should_exit',True)).start()
+    return {'stopping':True}
 
 @app.middleware('http')
 async def body_limit(request,call_next):
@@ -108,7 +116,8 @@ async def body_limit(request,call_next):
 
 def probe():
     try:
-        result=subprocess.run([sys.executable,'-m','ai_worker.probe'],cwd=ROOT,capture_output=True,timeout=45,creationflags=subprocess.CREATE_NO_WINDOW if os.name=='nt' else 0)
+        command=[sys.executable,'--probe'] if getattr(sys,'frozen',False) else [sys.executable,'-m','ai_worker.probe']
+        result=subprocess.run(command,cwd=ROOT,capture_output=True,timeout=45,creationflags=subprocess.CREATE_NO_WINDOW if os.name=='nt' else 0)
         if result.returncode:raise ValueError()
         return json.loads(result.stdout.decode('utf-8'))
     except (ValueError,OSError,subprocess.SubprocessError):return {'available':False,'errors':['独立 Python CUDA 诊断失败或超时'],'torch_cuda_available':None,'weights_ready':None,'gpus':[],'texture_ready':False}

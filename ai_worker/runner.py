@@ -5,7 +5,14 @@ from pathlib import Path
 def progress(directory,stage,step=None,total=None):
     value={'stage':stage,'progress':None,'progress_kind':'stage'}
     if step is not None:value.update(step=step,total_steps=total,progress=round(step/total*100,1),progress_kind='diffusion_steps')
-    temporary=directory/'progress.tmp';temporary.write_text(json.dumps(value),encoding='utf-8');temporary.replace(directory/'progress.json')
+    temporary=directory/'progress.tmp';temporary.write_text(json.dumps(value),encoding='utf-8')
+    # Windows polling readers/antivirus may briefly deny an atomic replacement.
+    for attempt in range(10):
+        try:
+            temporary.replace(directory/'progress.json');break
+        except PermissionError:
+            if attempt==9:raise
+            time.sleep(.02*(attempt+1))
 
 def run(directory):
     from backend.app.ai3d.contracts import GenerationOptions

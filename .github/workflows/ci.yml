@@ -4,6 +4,10 @@ on:
   pull_request:
   workflow_dispatch:
     inputs:
+      build_windows_package:
+        description: Build unsigned local-test Windows MSI (no paid API)
+        type: boolean
+        default: false
       run_hunyuan_real:
         description: Run actual Hunyuan inference on a prepared self-hosted GPU runner (no downloads)
         type: boolean
@@ -69,3 +73,27 @@ jobs:
         with:
           name: browser-results
           path: frontend/test-results
+
+  windows-package-optional:
+    if: github.event_name == 'workflow_dispatch' && inputs.build_windows_package
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - run: python -m venv .venv
+      - run: .venv/Scripts/python.exe -m pip install -r backend/requirements-lock.txt pyinstaller==6.22.3
+      - run: dotnet tool install wix --tool-path .tools/wix --version 6.0.2
+      - run: cd frontend; npm ci
+      - run: ./scripts/build-desktop.ps1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: forma-windows-local-test-msi
+          path: release/FORMA-AI-3D-Studio-0.4.0-x64.msi

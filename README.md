@@ -1,8 +1,16 @@
-# FORMA · AI Text-to-3D Studio V0.3.1
+# FORMA · AI Text-to-3D Studio V0.4
 
 本地优先的三维工作台，保留参数化路径并新增独立 Generative AI 工作区：文字 → 受验证的 Scene JSON → Native Three.js / Blender → 真实 Mesh → 交互编辑 → 所见即所得导出。
 
 **基础几何与家具无需 Blender，也不需要 LLM 或 API Key。** 房屋继续使用 Blender。中文为默认界面，可解析常见中英日文关键词，并支持配置本地 Ollama 或 OpenAI-compatible 服务。
+
+## V0.4 Windows 桌面与资产库
+
+本机测试安装包：`release/FORMA-AI-3D-Studio-0.4.0-x64.msi`。安装后双击启动，不需要手动启动 Python、Node 或 FastAPI；需要系统 WebView2 Runtime。当前未签名，尚未通过 Store 认证。
+
+新增资产库、项目引用保护、加载进度/取消、上下文恢复、原生 DPAPI Key 配置与低成本真实 API 验收工具。真实 Meshy 测试默认关闭，无 Key 或未明确授权费用只生成 Skipped 报告；Mock/契约不算推理成功。
+
+构建、目录、安全和安装说明见 [Windows Desktop](docs/DESKTOP-WINDOWS.md)，实际结果与剩余工作见 [V0.4 报告](docs/IMPLEMENTATION.md)。可选 GPU 旧依赖存在已知漏洞，未打包进桌面引擎，见 [GPU 设置](docs/GPU-SETUP.md)。
 
 ## V0.3 Generative AI 路径
 
@@ -20,7 +28,7 @@ API 和 Worker 分别在本机 8000 / 8010 端口，使用相同的随机 `AI3D_
 
 生成进度仅展示真实扩散步数，加载 / 后处理等阶段不伪造百分比；可取消排队及活动任务，Worker 终止推理进程树并释放模型资源。可下载原始 Mesh 和处理后 GLB，默认不执行破坏性修复。
 
-## Windows 启动
+## 开发环境启动
 
 需要 Python 3.11+、Node.js 22+。房屋建模需要 Blender 4.5+，可使用 [官方便携版](https://www.blender.org/download/)，已有 `.tools/blender-*/blender.exe` 会自动发现。
 

@@ -1,0 +1,21 @@
+{
+  "id": "bf6ec21f-568b-4517-b647-0bd48d9bee97",
+  "kind": "real_api_acceptance",
+  "created": "2026-11-07T06:26:47.088438+00:00",
+  "model": "meshy-6-lite",
+  "estimated_credits": 5,
+  "textured": false,
+  "status": "skipped",
+  "remote_id": null,
+  "asset_id": null,
+  "checks": {
+    "key": false,
+    "paid_authorized": false,
+    "mesh": false,
+    "materials_inspected": false,
+    "viewer_loaded": false,
+    "save_reopen_export": "not_verified"
+  },
+  "notice": "一次低成本 preview 几何任务；预计 5 credits，实际费用以服务方为准。不会自动 refine 或自动重建。",
+  "reason": "未配置本地 Key；没有发起真实 API 请求"
+}

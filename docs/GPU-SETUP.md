@@ -6,7 +6,7 @@
 
 [官方 README](https://github.com/Tencent-Hunyuan/Hunyuan3D-2.1/tree/82920d643c0dc2f7bfd7255f45f62d386edfe60c) 列出 Windows / macOS / Linux，并给出 Python 3.10、PyTorch 2.5.1+cu124 的测试组合。本项目首选 NVIDIA CUDA；不自动启用 CPU、MPS、量化或其他未经验证的回退。官方给出的 Shape / Paint 显存需求分开列出，本适配器采用当前可用显存至少 10 GiB（Shape）和 21 GiB（Paint）的保守准入门槛；通过准入不等于实际推理已经验证。
 
-形状环境与 API 环境完全分开。API 仍使用原 Python 3.11+；Worker 推荐独立 Python 3.10。Paint 还涉及 CUDA / C++ 扩展，上游包含 bash 编译脚本，Windows 原生编译没有在本机验证；有准备好的 Linux / WSL2 CUDA 环境时可按上游说明单独配置。没有自动安装 CUDA toolkit、驱动或 Python 系统版本的代码。
+形状环境与 API 环境完全分开。API 仍使用原 Python 3.11+；V0.4 新建 Worker 使用独立 Python 3.11（Pillow 13 要求），此组合真实 CUDA 推理尚未验证。Paint 还涉及 CUDA / C++ 扩展，上游包含 bash 编译脚本，Windows 原生编译没有在本机验证；有准备好的 Linux / WSL2 CUDA 环境时可按上游说明单独配置。没有自动安装 CUDA toolkit、驱动或 Python 系统版本的代码。
 
 ## 1. 先诊断，不下载
 
@@ -20,7 +20,7 @@
 
 ## 2. 用户主动创建环境
 
-先安装好自己选择的 Python 3.10 和兼容 GPU 驱动，阅读 [模型许可记录](MODEL-LICENSES.md)。以下命令会下载推理依赖，包括较大的 PyTorch 包；**本次开发没有执行这些安装命令**。
+先安装好 Python 3.11 和兼容 GPU 驱动，阅读 [模型许可记录](MODEL-LICENSES.md)。以下命令会下载推理依赖，包括较大的 PyTorch 包；**本次开发没有执行这些安装命令**。
 
 ```powershell
 .\scripts\setup-ai3d-worker.ps1 -InstallDependencies -AcceptModelLicense
@@ -93,3 +93,7 @@ cd backend
 ## 无 GPU 的替代路径
 
 V0.3.1 提供 Meshy 云端 Text/Image-to-3D，不需要安装 Worker、CUDA 或大型权重。需要本人有权限和余额的 API Key；按 [CLOUD-PROVIDERS](CLOUD-PROVIDERS.md) 加密配置并确认云端费用。它不证明本机 Hunyuan 实测成功。
+
+## V0.4 安全限制
+
+2026-11-07 对固定上游 GPU 依赖审计发现 49 项已知漏洞（transformers 43、diffusers 5、accelerate 1），详见 v04-optional-gpu-dependency-audit.json。未安装或随桌面分发这些包，尚未验证兼容升级；不应将现有上游锁定组合当作经过安全验收的生产环境。不要导入不可信权重。API/桌面 Pillow 已升级 13，新建 Worker 环境选 Python 3.11，已有非 3.11 环境脚本拒绝修改；可用 -EnvironmentPath 指定独立新目录。以上不等于 GPU 推理实测通过。

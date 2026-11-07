@@ -32,6 +32,8 @@ def connection():
     finally:con.close()
 
 def initialize():
+    from . import migrations
+    migrations.prepare(DB)
     with connection() as db:
         db.executescript('''
         CREATE TABLE IF NOT EXISTS projects(id TEXT PRIMARY KEY,name TEXT,scene TEXT,prompt TEXT,updated TEXT DEFAULT CURRENT_TIMESTAMP);
@@ -44,6 +46,10 @@ def initialize():
         db.execute("UPDATE jobs SET status='failed',error='服务重启，任务已中断' WHERE status IN ('running','pending')")
     from .ai3d.routes import initialize as initialize_ai3d
     initialize_ai3d(connection)
+    migrations.finish(connection)
+    with connection() as db:
+        setting=db.execute("SELECT value FROM app_settings WHERE key='blender_path'").fetchone()
+        if setting and Path(setting[0]).is_file():os.environ["BLENDER_PATH"]=setting[0]
 
 def blender_path():
     configured=os.getenv('BLENDER_PATH')
@@ -66,7 +72,10 @@ def asset_file(model_id,extension):
     if extension not in ('glb','obj','json','mtl'): raise HTTPException(400,'不支持的格式')
     path=(DATA/model_id/f'model.{extension}').resolve()
     if not path.is_relative_to(DATA): raise HTTPException(400,'无效路径')
-    if not path.is_file(): raise HTTPException(404,'文件不存在')
+    if not path.is_file():
+        alternative=(DATA/'library'/model_id/f'model.{extension}').resolve()
+        if alternative.is_relative_to(DATA) and alternative.is_file():return alternative
+        raise HTTPException(404,'文件不存在')
     return path
 
 def update_job(job_id,status,progress,error=None):
@@ -120,7 +129,7 @@ async def lifespan(app):
         for job_id in list(job_runtime.PROCESSES):
             job_runtime.cancel(job_id)
 
-app=FastAPI(title='AI Text-to-3D Studio',version='0.3.1',lifespan=lifespan)
+app=FastAPI(title='AI Text-to-3D Studio',version='0.4.0',lifespan=lifespan)
 app.add_middleware(CORSMiddleware,allow_origins=['http://localhost:5173','http://127.0.0.1:5173'],allow_methods=['GET','POST','PUT','DELETE'],allow_headers=['Content-Type'])
 
 @app.middleware('http')
@@ -148,7 +157,7 @@ class ProjectRequest(Strict):
     model_id: str | None = None
 
 @app.get('/api/health')
-def health(): return {'status':'ok','blender_available':bool(blender_path()),'version':'0.3.1'}
+def health(): return {'status':'ok','blender_available':bool(blender_path()),'version':'0.4.0'}
 
 @app.post('/api/providers/ollama/check')
 async def ollama_check(config:OllamaConfig):
@@ -312,3 +321,17 @@ from .ai3d.routes import router as ai3d_router
 app.include_router(ai3d_router)
 from .ai3d.cloud import router as cloud3d_router
 app.include_router(cloud3d_router)
+
+from .security import install as install_security
+install_security(app)
+
+from .desktop_api import router as desktop_router
+from .library import router as library_router
+app.include_router(desktop_router)
+app.include_router(library_router)
+
+from .acceptance import router as acceptance_router
+app.include_router(acceptance_router)
+
+from .privacy import router as privacy_router
+app.include_router(privacy_router)

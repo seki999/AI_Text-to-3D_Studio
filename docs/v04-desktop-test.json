@@ -1,0 +1,16 @@
+{
+  "install_exit": 0,
+  "uninstall_exit": 0,
+  "production_canvas": true,
+  "native_model_loaded": true,
+  "unauthorized_api": 401,
+  "managed_pids_stopped": true,
+  "webview_browser_stopped": true,
+  "package_sha256": "06cdbe126eca002b731567edfdbfc43efa8154d55c531713d2711a53c9c6eb94",
+  "package_bytes": 68708484,
+  "signed": false,
+  "real_paid_api": "not_run",
+  "data_preserved": true,
+  "application_removed": true,
+  "package": "C:\\Users\\seki9\\Documents\\AI_Text-to-3D_Studio\\release\\FORMA-AI-3D-Studio-0.4.0-x64.msi"
+}

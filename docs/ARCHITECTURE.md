@@ -73,3 +73,7 @@ Ollama 仅访问回环 HTTP 端口，将 localhost 归一化成字面 IP，禁�
 ## 仍有的限制
 
 不支持账号 / 公网多租户、多个 Uvicorn worker、OS 级内存沙箱、分布式任务调度、GLTF 外部资源包及完整 OBJ 纹理导入、骨骼 / morph 动画编辑、真实纹理木材、建筑施工校核或通用神经 3D 引擎。仅适用于可信本机；外部 GLTF 应仅含内嵌资源，未实现完整不可信 3D 文件解析沙箱。Windows 安装包与商店发布留待后续版本。
+
+## V0.4
+
+WinForms/WebView2 主机管理随机本地端口上的冻结 FastAPI 与可选 Worker，生产界面是编译静态资源。会话密钥不进入 JavaScript；Host/Origin/cookie/原生 Bearer 构成请求边界。SQLite user_version 4 升级前备份，library_assets 索引与独立 library/{uuid} 文件分离，删除前检查项目引用。真实 acceptance_runs 与 Mock/contract 测试区分。GLB 加载器拥有其 GPU 资源并在取消/卸载时释放，WebGL 丢失可重建 Viewer。桌面分发详情见 DESKTOP-WINDOWS.md。

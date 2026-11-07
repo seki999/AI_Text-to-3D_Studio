@@ -23,3 +23,11 @@ frontend/tsconfig.tsbuildinfo
 # Never commit local encrypted credentials or temporary secret files
 *.dpapi
 *.secret
+
+/release/
+/build/
+/dist/
+desktop/**/bin/
+desktop/**/obj/
+*.msi
+*.wixpdb

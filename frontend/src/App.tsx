@@ -15,13 +15,14 @@ import * as THREE from "three";
 import { getExportModel } from "./services/export";
 import { exportGLTF } from "./services/export";
 import type { EditingOptions } from "./viewer/EditingControls";
+import { AssetLibrary, StudioSettings, FirstRun } from "./components/StudioTools";
 import { GenerativePanel } from "./components/GenerativePanel";
 import { prepareAssetInsertion } from "./services/insertAsset";
 
 const initial =
   "生成一栋日本两层独立住宅，白色外墙、灰色双坡屋顶、四个正面窗户、一个入口、二楼阳台。";
 export default function App() {
-  const [workspace, setWorkspace] = useState<"parametric" | "generative">(
+  const [workspace, setWorkspace] = useState<"parametric" | "generative" | "library" | "settings">(
       "parametric",
     ),
     [preserveScene, setPreserveScene] = useState(false);
@@ -336,6 +337,7 @@ export default function App() {
         </nav>
         <span className="local">● 本地工作空间</span>
       </header>
+      <FirstRun />
       <div className="workspace">
         <aside className="left">
           <div className="workspace-tabs">
@@ -352,7 +354,8 @@ export default function App() {
               Generative AI
             </button>
           </div>
-          {workspace === "generative" ? (
+          <div className="row"><button onClick={() => setWorkspace("library")}>资产库</button><button onClick={() => setWorkspace("settings")}>设置 / 验收</button></div>
+          {workspace === "library" ? <AssetLibrary onInsert={insertAIAsset} onError={setError} /> : workspace === "settings" ? <StudioSettings onInsert={insertAIAsset} onError={setError} /> : workspace === "generative" ? (
             <GenerativePanel onInsert={insertAIAsset} onError={setError} />
           ) : (
             <PromptPanel

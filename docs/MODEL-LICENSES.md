@@ -33,3 +33,7 @@
 Meshy 是收费的第三方服务，不随本项目发布权重。接口见 [Text](https://docs.meshy.ai/en/api/text-to-3d) 与 [Image](https://docs.meshy.ai/en/api/image-to-3d)，授权以 [服务条款](https://www.meshy.ai/terms-of-use) 和用户自己的账户方案为准。条款 3.2 对付费用户输出权利作出约定；免费方案采用 CC BY 4.0，不能从项目 MIT 推断输出许可。输入素材须有合法权利，不保证输出唯一性或可版权性。不得移除输出的 AI 标记；原始 GLB 备份保留。条款还限制服务转售、竞争性用途、账户共享和特定训练用途；发布共享 SaaS 或转售服务前须向 Meshy 核实对应授权，不能把个人 BYOK 集成当成白标转售许可。
 
 本次仅实现本人密钥的本地客户端，未共享/分发密钥、未代购额度、未替用户接受订阅。账户权益及保留期可能调整；商用前核对当时条款和实际账户方案，项目资产 metadata 记录来源及条款链接，不自动认定无限制商用。费用见 [API Pricing](https://docs.meshy.ai/en/api/pricing)。Tripo 本次仅作 [官方文档](https://docs.tripo3d.ai/get-started/introduction.html) 和 [条款](https://www.tripo3d.ai/terms) 研究，未接入或实际推理。
+
+## V0.4 桌面分发
+
+桌面使用 .NET 10、Microsoft WebView2 SDK 与系统 Evergreen Runtime；引擎用 PyInstaller 打包 Python，第三方组件仍受各自许可约束。安装目录 ThirdParty-Licenses 包含运行时依赖许可清单/通知，不分发 AI 权重或 Blender。WebView2 Runtime 使用 Microsoft 分发条款。项目许可证不授予第三方模型、输入图片或云端输出额外商业权利；必须核对生成时套餐、来源授权和服务条款。真实 API 验收不替用户授权商用。

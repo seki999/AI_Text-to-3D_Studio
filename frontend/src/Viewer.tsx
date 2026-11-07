@@ -4,11 +4,13 @@ import {
   useMemo,
   useLayoutEffect,
   useState,
+  useRef,
   Component,
   type ReactNode,
 } from "react";
 import { Canvas, useThree, useLoader } from "@react-three/fiber";
 import {
+  Html,
   OrbitControls,
   Grid,
   Bounds,
@@ -17,6 +19,7 @@ import {
   OrthographicCamera,
 } from "@react-three/drei";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+import { loadGLB } from "./services/assetLoading";
 import { OBJLoader } from "three/examples/jsm/loaders/OBJLoader.js";
 import * as T from "three";
 import { useStudio, empty } from "./store";
@@ -140,12 +143,14 @@ function Native(props: {
   );
   return root ? <Model root={root} {...props} /> : null;
 }
-function Asset({
+function LoadedAsset({
+  loaded,
   url,
   format,
   preserveScene,
   ...props
 }: {
+  loaded: T.Group | { scene: T.Group };
   url: string;
   format: string;
   preserveScene: boolean;
@@ -153,12 +158,10 @@ function Asset({
   onReady: () => void;
   editing: EditingOptions;
 }) {
-  const loaded = useLoader(format === "obj" ? OBJLoader : GLTFLoader, url) as
-    T.Group | { scene: T.Group };
   const external = url.startsWith("blob:") && !preserveScene;
   const [initialized, setInitialized] = useState(!external);
   const root = useMemo(() => {
-    const clone = cloneAsset("scene" in loaded ? loaded.scene : loaded);
+    const clone = "scene" in loaded ? loaded.scene : loaded;
     if (external) {
       clone.traverse((n) => {
         delete n.userData.editorId;
@@ -197,8 +200,29 @@ function Asset({
       setInitialized(true);
     }
   }, [root, external]);
-  useEffect(() => () => disposeModel(root), [root]);
   return initialized ? <Model root={root} {...props} /> : null;
+}
+function Asset(props: {url:string;format:string;preserveScene:boolean;wire:boolean;onReady:()=>void;editing:EditingOptions}) {
+  const [loaded,setLoaded]=useState<T.Group|{scene:T.Group}|null>(null),[progress,setProgress]=useState("准备加载"),[cancelled,setCancelled]=useState(false),[failure,setFailure]=useState(""),[faces,setFaces]=useState(0);
+  const cancellation=useRef<AbortController|null>(null);
+  useEffect(()=>{
+    const controller=new AbortController();cancellation.current=controller;
+    let root:T.Group|null=null;
+    const run=async()=>{
+      try {
+        const result=props.format==="obj"?await new OBJLoader().loadAsync(props.url):await loadGLB(props.url,controller.signal,(bytes,total)=>setProgress(total?`下载 ${Math.round(bytes/total*100)}%`:`已下载 ${(bytes/1048576).toFixed(1)} MB`));
+        root="scene" in result?result.scene:result;
+        if(controller.signal.aborted){disposeModel(root);root=null;return;}
+        let count=0;root.traverse(node=>{if(node instanceof T.Mesh)count+=(node.geometry.index?.count??node.geometry.attributes.position.count)/3;});
+        setFaces(count);setLoaded(result);
+      } catch(e) { if(!controller.signal.aborted)setFailure(String(e)); }
+    };
+    run();return()=>{controller.abort();if(root)disposeModel(root);};
+  },[props.url,props.format]);
+  if(failure)return <Html center><div className="load-overlay" role="alert">模型加载失败：{failure}</div></Html>;
+  if(cancelled)return <Html center><div className="load-overlay">已取消加载，原始文件未修改。</div></Html>;
+  if(!loaded)return <Html center><div className="load-overlay">{progress}<button onClick={()=>{cancellation.current?.abort();setCancelled(true);}}>取消加载</button></div></Html>;
+  return <><LoadedAsset {...props} loaded={loaded}/>{faces>250000&&<Html position={[0,4,0]}><div className="load-overlay">高面数：{Math.round(faces).toLocaleString()} 面；可在资产库显式创建简化副本。</div></Html>}</>;
 }
 function Camera({ view, reset }: { view: string; reset: number }) {
   const { camera, invalidate } = useThree();
@@ -282,8 +306,10 @@ export function Viewer({
   onReady,
   editing = { mode: "translate", space: "world", snap: false, focus: 0 },
 }: Props) {
+  const [epoch,setEpoch]=useState(0),[lost,setLost]=useState(false);
   return (
-    <Canvas
+    <div className="viewer-surface"><Canvas key={epoch}
+      onCreated={({gl})=>{gl.domElement.addEventListener("webglcontextlost",event=>{event.preventDefault();setLost(true);});gl.domElement.addEventListener("webglcontextrestored",()=>{setLost(false);setEpoch(value=>value+1);});}}
       gl={{ preserveDrawingBuffer: true, antialias: true }}
       onPointerMissed={() => useStudio.getState().select(null)}
     >
@@ -326,6 +352,6 @@ export function Viewer({
           </Suspense>
         </Boundary>
       )}
-    </Canvas>
+    </Canvas>{lost&&<div className="context-overlay" role="alert">WebGL 上下文已丢失，当前项目数据仍保留。<button onClick={()=>{setLost(false);setEpoch(value=>value+1);}}>重新创建视图</button></div>}</div>
   );
 }
