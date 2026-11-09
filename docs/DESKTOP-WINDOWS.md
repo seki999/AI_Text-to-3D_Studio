@@ -35,7 +35,9 @@ dotnet tool install wix --tool-path .tools/wix --version 6.0.2
 ./scripts/test-desktop.ps1
 ```
 
-测试脚本拒绝覆盖已存在的用户安装。仅对本次 MSI 安装/卸载，使用隔离 FORMA_TEST_HOME，验证正式 Canvas、Native 模型、401、两个 sidecar 退出和数据保留。测试截图在 `.tools/v04-installed-smoke/desktop-native.png`。
+测试脚本拒绝覆盖已存在的用户安装。仅对本次 MSI 安装/卸载，每次生成独立 `.tools/v04-installed-smoke/{run_id}` 数据目录并核对报告时间，拒绝读取历史成功报告。验证正式 Canvas、Native 模型、401、两个 sidecar / WebView2 浏览器退出和数据保留。测试截图位于本轮报告 `test_home` 下的 `desktop-native.png`。无论成功或失败，均在 finally 中卸载本次脚本安装的软件并恢复原 FORMA_TEST_HOME；不会卸载已有用户安装。
+
+可执行 `./scripts/test-desktop.ps1 -SimulateFailureAfterInstall` 验证故障清理路径：预期抛出明确的注入错误，`docs/v04-desktop-failure-test.json` 中应记录 `failure_injected=true`、卸载返回 0、`application_removed=true`，未执行的检查为 null。此报告的 failed 是故意触发的测试结果，不代表真实生成或正常安装失败。正常验收仍需独立运行且 status=passed。
 
 数据库 user_version=4，升级前用 SQLite backup 保存旧数据库，拒绝打开更新的 schema。安装包 MajorUpgrade 保持组件身份，拒绝降级。当前不执行自动更新；安全升级路线为用户下载并核验正式签名安装包后升级，先保留数据备份。签名/可信发布源未配置，因此自动更新尚未实现。
 

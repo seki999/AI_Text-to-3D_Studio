@@ -1,6 +1,6 @@
 # FORMA V0.4 增量开发报告
 
-日期：2026-11-07。分支 `codex/v0.4-windows-studio`，基线 V0.3.1 `1c9e96d`。未合并 main，未执行付费请求、购买服务、下载大型模型或发布 Store。V0.3.1 原报告见 IMPLEMENTATION-V031.md。
+日期：2026-11-07。分支 `codex/v0.4-windows-studio`，基线 V0.3.1 `1c9e96d`。初次交付保留独立分支，随后经用户明确授权合并 main（见文末记录）；未执行付费请求、购买服务、下载大型模型或发布 Store。V0.3.1 原报告见 IMPLEMENTATION-V031.md。
 
 ## 已实现
 
@@ -30,7 +30,7 @@
 
 Python 回归包含 Native、Blender、Ollama 协议、Mock Worker HTTP/进程、Meshy MockTransport 契约。本次额外运行真实本地 Ollama qwen3-coder:30b：Python 1 passed（80.20 秒）及 Playwright 1 passed（55.0 秒）；没有新增下载。协议测试不算真实推理。Windows 轮询进度文件的瞬时共享冲突已加入有界重试和回归测试。
 
-安装结果见 v04-desktop-test.json；真实请求关闭报告见 v04-real-api-verification.json；审计见 v04-*-audit.json。最新 V0.3.1 CI 已核实 success，run 42305524315；V0.4 远端 CI 必须在推送后单独确认。Windows 打包 CI 仅手动开启；GitHub Actions 不触发付费生成。
+安装结果见 v04-desktop-test.json；真实请求关闭报告见 v04-real-api-verification.json；审计见 v04-*-audit.json。V0.3.1 CI success，run 42305524315；V0.4 分支 CI [42374749912](https://github.com/seki999/AI_Text-to-3D_Studio/actions/runs/42374749912) 与合并后的 main CI [42376014364](https://github.com/seki999/AI_Text-to-3D_Studio/actions/runs/42376014364) 均已核实 success（d1f58d3）。Windows 打包 CI 仅手动开启；GitHub Actions 不触发付费生成。
 
 ## 未完成的外部验收与发布条件
 
@@ -41,6 +41,8 @@ Python 回归包含 Native、Blender、Ollama 协议、Mock Worker HTTP/进程�
 5. 当前 MSI 未签名；全新 Windows、缺失 WebView2 的前置安装、签名自动更新、WACK/Store、升级安装多版本矩阵尚未验收。
 6. 资产库列表目前最多 200 项，超大型库的分页及不同云端材质扩展兼容性仍需后续验证。
 
-## 合并方案
+## 合并记录与验收加固
 
-保持 main 不动。先审阅 V0.3.1 provider 与安全差异（原分支 CI success）；独立审阅 V0.4 桌面/数据迁移/授权及安装结果，推送后确认新 CI。确认上述未验证项可作为明确发布限制后，再由用户明确决定是否合并 main。不能据本地测试宣称真实收费 API 或 Store 认证通过。
+用户随后明确授权 commit/push 到 main，V0.3.1 与 V0.4 已快进合并为 d1f58d3，main CI success。以上历史开发阶段不自动合并的记录不代表当前仍未合并。不能据本地测试宣称真实收费 API 或 Store 认证通过。
+
+2026-11-09 在独立分支 `codex/v0.4-installer-verification` 加固安装测试：每次使用独立 run_id 数据目录，要求应用正常退出及本轮新报告；失败时仍卸载仅由本次脚本安装的软件，恢复环境变量；报告记录真实签名状态、故障注入和未执行检查，不将历史结果或未执行检查算作通过。未修改应用二进制，安装包 SHA-256 不变。执行正常路径及安装后故意失败的清理路径；结果分别见 v04-desktop-test.json 和 v04-desktop-failure-test.json。没有发起任何云端付费请求。
